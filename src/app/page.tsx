@@ -8,7 +8,6 @@ import { useSearch } from "@/hooks/use-search.hook";
 export default function Home() {
   const {
     results,
-    isLoading,
     error,
     hasSearched,
     currentPage,
@@ -63,7 +62,6 @@ export default function Home() {
 
               <SearchResults
                 results={results}
-                isLoading={isLoading}
                 error={error}
                 onPageChange={handlePageChange}
                 currentPage={currentPage}
