@@ -2,9 +2,9 @@ import { apiClient } from "./base.api";
 import { SearchApiResponse } from "@/types/search.type";
 
 export interface SearchParams {
-  keyword: string;
-  page?: number;
-  items_per_page?: number;
+  query: string;
+  offset?: number;
+  limit?: number;
 }
 
 // API 요청 타임아웃 (밀리초)
@@ -18,9 +18,9 @@ export const searchApi = {
   searchBlogs: (params: SearchParams): Promise<SearchApiResponse> => {
     return apiClient.get<SearchApiResponse>("v1/search", {
       params: {
-        keyword: params.keyword,
-        page: params.page || 1,
-        items_per_page: params.items_per_page || 10,
+        query: params.query,
+        offset: params.offset || 0,
+        limit: params.limit || 10,
       },
       timeout: API_TIMEOUT,
     });
