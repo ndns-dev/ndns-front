@@ -22,9 +22,9 @@ const ResultCard: React.FC<ResultCardProps> = ({ post }) => {
           dangerouslySetInnerHTML={{ __html: post.title }}
         />
         <div className="flex items-center space-x-2">
-          {post.is_sponsored ? (
+          {post.isSponsored ? (
             <span className="bg-red-100 text-red-800 text-xs font-medium px-2.5 py-0.5 rounded dark:bg-red-900 dark:text-red-300">
-              협찬 ({Math.round(post.sponsor_probability * 100)}%)
+              협찬 ({Math.round(post.sponsorProbability * 100)}%)
             </span>
           ) : (
             <span className="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded dark:bg-green-900 dark:text-green-300">
@@ -35,7 +35,7 @@ const ResultCard: React.FC<ResultCardProps> = ({ post }) => {
       </div>
 
       <div className="text-sm text-gray-600 dark:text-gray-400 mb-2">
-        {post.bloggername} • {formatDate(post.postdate)}
+        {post.bloggername} • {formatDate(post.postDate)}
       </div>
 
       <div
@@ -44,22 +44,22 @@ const ResultCard: React.FC<ResultCardProps> = ({ post }) => {
       />
 
       {/* 개발 환경에서만 협찬 키워드 표시 */}
-      {env.IS_DEVELOPMENT && post.sponsor_indicators.length > 0 && (
+      {env.IS_DEVELOPMENT && post.sponsorIndicators.length > 0 && (
         <div className="mt-2 mb-3">
           <div className="text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1">
             협찬 키워드:
           </div>
           <div className="flex flex-wrap gap-1">
-            {post.sponsor_indicators.map(
+            {post.sponsorIndicators.map(
               (indicator, idx) =>
-                indicator.matched_text &&
-                indicator.matched_text.length < 5 && (
+                indicator.matchedText &&
+                indicator.matchedText.length < 5 && (
                   <span
                     key={idx}
                     className="text-xs bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded dark:bg-yellow-900 dark:text-yellow-300"
                     title={`출처: ${indicator.source}`}
                   >
-                    {indicator.matched_text}
+                    {indicator.matchedText}
                   </span>
                 )
             )}
@@ -120,18 +120,18 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
   }
 
   // 협찬 여부에 따른 분류
-  const sponsoredPosts = results.posts.filter((post) => post.is_sponsored);
-  const nonSponsoredPosts = results.posts.filter((post) => !post.is_sponsored);
+  const sponsoredPosts = results.posts.filter((post) => post.isSponsored);
+  const nonSponsoredPosts = results.posts.filter((post) => !post.isSponsored);
 
   // 총 페이지 수 계산
-  const totalPages = Math.ceil(results.total_results / results.items_per_page);
+  const totalPages = Math.ceil(results.totalResults / results.itemsPerPage);
 
   return (
     <div className="mt-8 w-full max-w-4xl mx-auto">
       <div className="mb-6">
         <h2 className="text-xl font-bold text-gray-800 dark:text-white mb-4">
           &apos;{results.keyword}&apos; 검색 결과 (총{" "}
-          {results.total_results.toLocaleString()}개)
+          {results.totalResults.toLocaleString()}개)
         </h2>
 
         <div className="flex space-x-2 mb-4">

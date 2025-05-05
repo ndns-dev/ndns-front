@@ -3,7 +3,7 @@ import { useSearchStore } from "@/store/search.store";
 import { searchApi } from "@/apis/search.api";
 
 // 기본 페이지당 항목 수 (API 요청 및 UI에 표시할 항목 수)
-const ITEMS_PER_PAGE = 10;
+const itemsPerPage = 10;
 // 한 번에 프리페치할 페이지 수
 const PREFETCH_COUNT = 1;
 
@@ -59,14 +59,13 @@ export const useSearch = () => {
 
       // API 호출
       console.log(
-        `'${currentQuery}' 검색 중... (페이지 ${page}, ${ITEMS_PER_PAGE}개 항목)`
+        `'${currentQuery}' 검색 중... (페이지 ${page}, ${itemsPerPage}개 항목)`
       );
       const searchResults = await searchApi.searchBlogs({
-        keyword: currentQuery,
-        page,
-        items_per_page: ITEMS_PER_PAGE
+        query: currentQuery,
+        offset: (page - 1) * itemsPerPage,
+        limit: itemsPerPage,
       });
-
       // 결과 저장
       setResults(searchResults);
       setCurrentPage(page);
@@ -74,6 +73,7 @@ export const useSearch = () => {
       // 다음 페이지 프리페치 (백그라운드)
       prefetchNextPage(currentQuery, page);
     } catch (err) {
+      setLoading(false);
       setError("검색 중 오류가 발생했습니다. 다시 시도해주세요.");
       console.error("검색 오류:", err);
     }
@@ -97,9 +97,9 @@ export const useSearch = () => {
         // 백그라운드에서 다음 페이지 데이터 가져오기
         console.log(`백그라운드에서 페이지 ${nextPage} 가져오는 중...`);
         const nextPageData = await searchApi.searchBlogs({
-          keyword: queryText,
-          page: nextPage,
-          items_per_page: ITEMS_PER_PAGE
+          query: queryText,
+          offset: (nextPage - 1) * itemsPerPage,
+          limit: itemsPerPage,
         });
 
         // 스토어에 결과 캐싱
@@ -120,7 +120,7 @@ export const useSearch = () => {
     error,
     hasSearched,
     currentPage,
-    itemsPerPage: ITEMS_PER_PAGE,
+    itemsPerPage: itemsPerPage,
     setQuery,
     handleSearch,
     resetSearch,

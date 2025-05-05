@@ -1,7 +1,7 @@
 export interface SponsorIndicator {
   type: string;
   pattern: string;
-  matched_text: string;
+  matchedText: string;
   source: string;
   source_info: {
     image_url?: string;
@@ -16,18 +16,18 @@ export interface SearchResultPost {
   description: string;
   bloggername: string;
   bloggerlink: string;
-  postdate: string;
-  is_sponsored: boolean;
-  sponsor_probability: number;
-  sponsor_indicators: SponsorIndicator[];
+  postDate: string;
+  isSponsored: boolean;
+  sponsorProbability: number;
+  sponsorIndicators: SponsorIndicator[];
 }
 
 export interface SearchApiResponse {
   keyword: string;
-  total_results: number;
-  filtered_results: number;
+  totalResults: number;
+  sponsoredResults: number;
   page: number;
-  items_per_page: number;
+  itemsPerPage: number;
   posts: SearchResultPost[];
 }
 
