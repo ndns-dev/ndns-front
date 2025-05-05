@@ -16,10 +16,7 @@ export const env = {
   NODE_ENV: process.env.NODE_ENV || "development",
 
   // API URL
-  NEXT_PUBLIC_API_URL:
-    process.env.NODE_ENV === "development"
-      ? "http://localhost:8000"
-      : process.env.NEXT_PUBLIC_API_URL,
+  NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL,
 
   // 유틸리티 프로퍼티
   IS_DEVELOPMENT: process.env.NODE_ENV === "development",
