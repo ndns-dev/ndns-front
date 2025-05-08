@@ -124,8 +124,9 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
   const nonSponsoredPosts = results.posts.filter((post) => !post.isSponsored);
 
   // 총 페이지 수 계산
-  const totalPages = Math.ceil(results.totalResults / results.itemsPerPage);
-
+  const safeItemsPerPage = results.itemsPerPage || 10;
+  const totalPages = Math.max(1, Math.ceil(results.totalResults / safeItemsPerPage));
+  
   return (
     <div className="mt-8 w-full max-w-4xl mx-auto">
       <div className="mb-6">
@@ -179,7 +180,7 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
       </div>
 
       {/* 페이지네이션 */}
-      {totalPages > 1 && (
+      {results.totalResults >= safeItemsPerPage && (
         <div className="mt-8 flex justify-center">
           <Pagination
             currentPage={currentPage}
