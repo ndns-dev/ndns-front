@@ -25,41 +25,35 @@ const LoadingModal: React.FC<LoadingModalProps> = ({
       setDisplayMessage(prev => 
         prev === message ? `${message}.` : prev
       );
-    }, 1000);
+    }, 3000);
     
     const timer2 = setTimeout(() => {
       setDisplayMessage(prev => 
         prev === `${message}.` ? `${message}..` : prev
       );
-    }, 2000);
+    }, 5000);
 
+    
     const timer3 = setTimeout(() => {
-      setDisplayMessage(prev => 
-        prev === `${message}..` ? `${message}...` : prev
-      );
-    }, 3000);
+      setDisplayMessage("혹시 협찬인지 다시 한 번 꼼꼼히 확인하고 있어요.");
+    }, 7000);
     
     const timer4 = setTimeout(() => {
-      setDisplayMessage("혹시 협찬인지 다시 한 번 꼼꼼히 확인하고 있어요.");
-    }, 4000);
-    
-    const timer5 = setTimeout(() => {
       setSubMessage("거의 다 왔어요. 조금만 더 기다려 주세요.");
-    }, 6000);
+    }, 10000);
     
     return () => {
       clearTimeout(timer1);
       clearTimeout(timer2);
       clearTimeout(timer3);
       clearTimeout(timer4);
-      clearTimeout(timer5);
     };
   }, [isOpen, message]);
 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 transition-opacity">
+    <div className="fixed inset-0 z-50 flex items-center justify-center transition-opacity">
       <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-xl max-w-md w-full flex flex-col items-center">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-emerald-500 mb-4"></div>
         <p className="text-gray-700 dark:text-gray-300 text-center font-medium">
