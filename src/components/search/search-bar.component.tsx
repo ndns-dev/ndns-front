@@ -1,6 +1,7 @@
 import React, { FormEvent, useEffect, useRef } from "react";
 import { useSearch } from "@/hooks/use-search.hook";
 import { useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 
 interface SearchBarProps {
   centered?: boolean;
@@ -12,27 +13,26 @@ export const SearchBar: React.FC<SearchBarProps> = ({
   initialQuery = "" 
 }) => {
   const router = useRouter();
+  const pathname = usePathname();
   const { query, setQuery, handleSearch, isLoading } = useSearch();
   // initialQuery가 적용되었는지 추적하는 ref
   const initialQueryApplied = useRef(false);
 
   // initialQuery가 제공되면 쿼리 상태 초기화 (처음 한 번만)
   useEffect(() => {
-    // 처음 마운트 시 초기 쿼리 설정
+    // 메인 페이지에서만 초기 쿼리를 설정하고, 검색 페이지에서는 URL의 쿼리를 사용
     if (initialQuery && !initialQueryApplied.current) {
       setQuery(initialQuery);
       initialQueryApplied.current = true;
     }
   }, [initialQuery, setQuery]);
 
-
   const onSubmit = (e: FormEvent) => {
     e.preventDefault();
     
     if (query) {
       // 이미 검색 페이지에 있는지 확인
-      const currentPath = window.location.pathname;
-      const isOnSearchPage = currentPath.includes('/search');
+      const isOnSearchPage = pathname.includes('/search');
       
       if (isOnSearchPage) {
         // 이미 검색 페이지에 있으면 URL만 업데이트하고 검색 실행
@@ -104,7 +104,6 @@ export const SearchBar: React.FC<SearchBarProps> = ({
           )}
         </button>
       </div>
-
     </form>
   );
 };
