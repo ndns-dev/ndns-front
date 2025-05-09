@@ -49,6 +49,8 @@ export interface SearchState {
   error: string | null;
   hasSearched: boolean;
   cachedResults: CachedResults;
+  pendingFetches: Map<number, Promise<SearchApiResponse>>;
+  currentPage: number;
 
   // 액션들
   setQuery: (query: string) => void;
@@ -57,4 +59,8 @@ export interface SearchState {
   setResults: (results: SearchApiResponse) => void;
   getCachedResults: (query: string, page: number) => SearchApiResponse | null;
   resetSearch: () => void;
+  setPendingFetch: (page: number, promise: Promise<SearchApiResponse>) => void;
+  removePendingFetch: (page: number) => void;
+  getPendingFetch: (page: number) => Promise<SearchApiResponse> | undefined;
+  setCurrentPage: (page: number) => void;
 }
