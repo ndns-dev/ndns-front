@@ -5,12 +5,11 @@ import Link from "next/link";
 import { useSearchStore } from "@/store/search.store";
 
 export const Header: React.FC = () => {
-  const { clearLocalStorageCache } = useSearchStore();
+  const { clearSearchQuery } = useSearchStore();
 
-  // 메인 페이지로 이동 시 캐시 초기화
   const handleHomeClick = () => {
-    // 로컬 스토리지 캐시를 포함한 모든 검색 상태 초기화
-    clearLocalStorageCache();
+    // 검색어 초기화
+    clearSearchQuery();
   };
 
   return (

@@ -98,12 +98,12 @@ export const useSearchStore = create<SearchState>()(
       getPendingFetch: (page) => get().pendingFetches.get(page),
       setCurrentPage: (page: number) => set({ currentPage: page }),
       // 로컬 스토리지에서 검색 캐시를 완전히 제거하는 함수
-      clearLocalStorageCache: () => {
+      clearSearchQuery: () => {
         // 로컬 스토리지에서 검색 캐시 삭제
         if (typeof window !== 'undefined') {
           localStorage.removeItem('search-cache');
           
-          // 상태도 초기화
+          // 캐시는 유지하고 검색어만 초기화
           set({
             query: "",
             results: null,
@@ -111,8 +111,6 @@ export const useSearchStore = create<SearchState>()(
             error: null,
             hasSearched: false,
             currentPage: 1,
-            cachedResults: {} as CachedResults,
-            pendingFetches: new Map(),
           });
         }
       },
