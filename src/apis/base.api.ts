@@ -18,6 +18,7 @@ export type ApiResponse<T = unknown> = T;
 export interface ApiRequestOptions extends RequestInit {
   params?: Record<string, string | number | boolean | undefined>;
   timeout?: number;
+  skipRateLimiting?: boolean; // 레이트 리미팅 건너뛰기 옵션
 }
 
 /**
@@ -28,14 +29,80 @@ export interface ApiError extends Error {
   data?: unknown;
 }
 
+// 레이트 리미팅 상태 추적을 위한 인터페이스
+interface RateLimitState {
+  requestTimes: number[];
+  isDebouncing: boolean;
+  debounceTimer: NodeJS.Timeout | null;
+}
+
 /**
  * API 클라이언트 class
  */
 class ApiClient {
   private baseUrl: string;
+  private rateLimitState: RateLimitState = {
+    requestTimes: [],
+    isDebouncing: false,
+    debounceTimer: null,
+  };
+  
+  // 레이트 리미팅 설정
+  private rateLimit = {
+    maxRequests: 10, // 최대 요청 횟수
+    timeWindow: 5000, // 시간 윈도우 (밀리초)
+    debounceTime: 1000, // 디바운스 시간 (밀리초)
+  };
 
   constructor(baseUrl: string) {
     this.baseUrl = baseUrl;
+  }
+
+  /**
+   * 레이트 리미팅 체크
+   * 특정 시간 내 최대 요청 수를 초과하는지 확인
+   */
+  private checkRateLimit(): Promise<void> {
+    return new Promise((resolve, reject) => {
+      const now = Date.now();
+      
+      // 시간 윈도우 외의 오래된 요청 제거
+      this.rateLimitState.requestTimes = this.rateLimitState.requestTimes.filter(
+        time => now - time < this.rateLimit.timeWindow
+      );
+
+      // 최대 요청 횟수 초과 확인
+      if (this.rateLimitState.requestTimes.length >= this.rateLimit.maxRequests) {
+        const oldestRequest = this.rateLimitState.requestTimes[0];
+        const timeToWait = this.rateLimit.timeWindow - (now - oldestRequest);
+        
+        reject(new Error(`너무 많은 요청이 발생했습니다. ${Math.ceil(timeToWait / 1000)}초 후에 다시 시도해주세요.`));
+        return;
+      }
+
+      // 디바운싱 적용 (중복/빠른 요청 지연)
+      if (this.rateLimitState.isDebouncing) {
+        if (this.rateLimitState.debounceTimer) {
+          clearTimeout(this.rateLimitState.debounceTimer);
+        }
+        
+        this.rateLimitState.debounceTimer = setTimeout(() => {
+          this.rateLimitState.isDebouncing = false;
+          this.rateLimitState.requestTimes.push(Date.now());
+          resolve();
+        }, this.rateLimit.debounceTime);
+      } else {
+        // 디바운싱 상태 설정
+        this.rateLimitState.isDebouncing = true;
+        
+        // 짧은 지연 후 요청 허용
+        setTimeout(() => {
+          this.rateLimitState.isDebouncing = false;
+          this.rateLimitState.requestTimes.push(Date.now());
+          resolve();
+        }, 50); // 최소 지연
+      }
+    });
   }
 
   /**
@@ -48,6 +115,17 @@ class ApiClient {
     path: string,
     options: ApiRequestOptions = {}
   ): Promise<T> {
+    // 레이트 리미팅 적용 (특별히 skip 옵션이 없는 경우)
+    if (!options.skipRateLimiting) {
+      try {
+        await this.checkRateLimit();
+      } catch (error) {
+        if (error instanceof Error) {
+          throw error;
+        }
+      }
+    }
+
     const url = this.createUrl(path, options.params);
 
     try {
