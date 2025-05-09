@@ -2,72 +2,31 @@
 
 import { Header } from "@/components/common/header.component";
 import { SearchBar } from "@/components/search/search-bar.component";
-import { SearchResults } from "@/components/search/search-result.component";
-import { useSearch } from "@/hooks/use-search.hook";
 
 export default function Home() {
-  const {
-    results,
-    error,
-    hasSearched,
-    currentPage,
-    handleSearch,
-    query,
-  } = useSearch();
-
-  // 페이지 변경 핸들러
-  const handlePageChange = (page: number) => {
-    if (query) {
-      handleSearch(query, page);
-    }
-  };
-
   return (
     <div className="flex flex-col min-h-screen">
       <Header />
 
       <main className="flex-grow flex flex-col items-center px-4 py-8">
-        <div
-          className={`w-full max-w-4xl mx-auto ${
-            hasSearched
-              ? "pt-8"
-              : "flex flex-col items-center justify-center flex-grow"
-          }`}
-        >
-          {!hasSearched ? (
-            <>
-              <div className="text-center mb-12">
-                <h1 className="text-4xl font-bold text-emerald-600 dark:text-emerald-400 mb-2">
-                  내돈내산
-                </h1>
-                <p className="text-lg text-gray-600 dark:text-gray-400">
-                  블로그 리뷰에서 협찬 포스트를 필터링하고 진짜 리뷰만
-                  찾아보세요
-                </p>
-              </div>
+        <div className="w-full max-w-4xl mx-auto flex flex-col items-center justify-center flex-grow">
+          <div className="text-center mb-12">
+            <h1 className="text-4xl font-bold text-emerald-600 dark:text-emerald-400 mb-2">
+              내돈내산
+            </h1>
+            <p className="text-lg text-gray-600 dark:text-gray-400">
+              블로그 리뷰에서 협찬 포스트를 필터링하고 진짜 리뷰만
+              찾아보세요
+            </p>
+          </div>
 
-              <div className="w-full max-w-2xl">
-                <SearchBar centered />
-              </div>
+          <div className="w-full max-w-2xl">
+            <SearchBar centered />
+          </div>
 
-              <div className="mt-8 text-sm text-gray-500 dark:text-gray-500 text-center">
-                예시 검색어: 강남 맛집, 신논현역 카페
-              </div>
-            </>
-          ) : (
-            <>
-              <div className="w-full mb-8">
-                <SearchBar />
-              </div>
-
-              <SearchResults
-                results={results}
-                error={error}
-                onPageChange={handlePageChange}
-                currentPage={currentPage}
-              />
-            </>
-          )}
+          <div className="mt-8 text-sm text-gray-500 dark:text-gray-500 text-center">
+            예시 검색어: 강남 맛집, 신논현역 카페
+          </div>
         </div>
       </main>
 
