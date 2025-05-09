@@ -1,7 +1,6 @@
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import { useSearchStore } from "@/store/search.store";
 import { searchApi } from "@/apis/search.api";
-import { SearchApiResponse } from "@/types/search.type";
 
 // 기본 페이지당 항목 수 (API 요청 및 UI에 표시할 항목 수)
 const itemsPerPage = 10;
