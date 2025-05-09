@@ -2,11 +2,14 @@
 
 import { Header } from "@/components/common/header.component";
 import { SearchBar } from "@/components/search/search-bar.component";
+import { SponsorBanner } from "@/components/common/sponsor-banner.component";
 
 export default function Home() {
   return (
     <div className="flex flex-col min-h-screen">
       <Header />
+      
+      <SponsorBanner position="top" />
 
       <main className="flex-grow flex flex-col items-center px-4 py-8">
         <div className="w-full max-w-4xl mx-auto flex flex-col items-center justify-center flex-grow">

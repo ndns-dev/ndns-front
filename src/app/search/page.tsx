@@ -6,6 +6,7 @@ import { Header } from "@/components/common/header.component";
 import { SearchBar } from "@/components/search/search-bar.component";
 import { SearchResults } from "@/components/search/search-result.component";
 import { useSearch } from "@/hooks/use-search.hook";
+import { SponsorBanner } from "@/components/common/sponsor-banner.component";
 
 export default function SearchPage() {
   const router = useRouter();
@@ -55,6 +56,8 @@ export default function SearchPage() {
   return (
     <div className="flex flex-col min-h-screen">
       <Header />
+      
+      <SponsorBanner position="top" />
       
       <main className="flex-grow flex flex-col items-center px-4 py-8">
         <div className="w-full max-w-4xl mx-auto pt-8">

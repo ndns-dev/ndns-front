@@ -24,17 +24,10 @@ export const Header: React.FC = () => {
         </Link>
         <nav className="flex items-center space-x-4">
           <Link
-            href="/"
-            className="text-gray-700 dark:text-gray-300 hover:text-emerald-500 dark:hover:text-emerald-400 transition-colors"
-            onClick={handleHomeClick}
-          >
-            홈
-          </Link>
-          <Link
             href="/about"
             className="text-gray-700 dark:text-gray-300 hover:text-emerald-500 dark:hover:text-emerald-400 transition-colors"
           >
-            소개
+            문의하기
           </Link>
         </nav>
       </div>
