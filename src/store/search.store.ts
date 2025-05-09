@@ -38,6 +38,7 @@ export const useSearchStore = create<SearchState>()(
             pageData,
           },
         };
+
         set({
           results,
           isLoading: false,
@@ -96,16 +97,6 @@ export const useSearchStore = create<SearchState>()(
         }),
       getPendingFetch: (page) => get().pendingFetches.get(page),
       setCurrentPage: (page: number) => set({ currentPage: page }),
-      // 검색어만 초기화하는 함수
-      resetQuery: () => {
-        set({
-          query: "",
-          results: null,
-          error: null,
-          isLoading: false,
-        });
-      },
-      
       // 로컬 스토리지에서 검색 캐시를 완전히 제거하는 함수
       clearLocalStorageCache: () => {
         // 로컬 스토리지에서 검색 캐시 삭제
@@ -144,27 +135,20 @@ export const useSearchStore = create<SearchState>()(
 
 // 새로고침 후 초기화 로직: 저장된 캐시에서 마지막 결과 복원
 if (typeof window !== 'undefined') {
-  // 브라우저 환경에서만 실행
-  setTimeout(() => {
-    const { query, currentPage, hasSearched, results, getCachedResults, setResults, setLoading } = useSearchStore.getState();
+  // 브라우저 환경에서만 실행 - 즉시 실행 (setTimeout 제거)
+  const { query, currentPage, hasSearched, results, getCachedResults, setResults, setLoading } = useSearchStore.getState();
+  
+  // 이전에 검색 결과가 있었지만 현재 결과가 없는 경우 (새로고침으로 인한 결과 초기화)
+  if (hasSearched && query && !results) {
+    // 로딩 상태 즉시 설정 (새로고침 직후 UI 깜빡임 방지)
+    setLoading(true);
     
-    // 이전에 검색 결과가 있었지만 현재 결과가 없는 경우 (새로고침으로 인한 결과 초기화)
-    if (hasSearched && query) {
-      // 로딩 상태 즉시 설정 (새로고침 직후 UI 깜빡임 방지)
-      setLoading(true);
-      
-      // 캐시된 결과 확인
-      const cachedResult = getCachedResults(query, currentPage);
-      if (cachedResult) {
-        // 약간의 딜레이 후 결과 복원
-        setTimeout(() => {
-          setResults(cachedResult);
-          setLoading(false);
-          console.log(`새로고침 후 '${query}' 검색 결과 복원 (페이지 ${currentPage})`);
-        }, 300);
-      } else {
-        setLoading(false);
-      }
+    // 캐시된 결과 확인 - 즉시 복원 (딜레이 제거)
+    const cachedResult = getCachedResults(query, currentPage);
+    if (cachedResult) {
+      setResults(cachedResult);
+      console.log(`새로고침 후 '${query}' 검색 결과 즉시 복원 (페이지 ${currentPage})`);
     }
-  }, 0);
+    setLoading(false);
+  }
 }
