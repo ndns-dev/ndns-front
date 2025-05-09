@@ -1,25 +1,49 @@
-import React, { FormEvent } from "react";
+import React, { FormEvent, useEffect, useRef } from "react";
 import { useSearch } from "@/hooks/use-search.hook";
-import { useLoadingMessage } from "@/utils/loading.utils";
+import { useRouter } from "next/navigation";
 
 interface SearchBarProps {
   centered?: boolean;
+  initialQuery?: string;
 }
 
-export const SearchBar: React.FC<SearchBarProps> = ({ centered = false }) => {
+export const SearchBar: React.FC<SearchBarProps> = ({ 
+  centered = false,
+  initialQuery = "" 
+}) => {
+  const router = useRouter();
   const { query, setQuery, handleSearch, isLoading } = useSearch();
+  // initialQuery가 적용되었는지 추적하는 ref
+  const initialQueryApplied = useRef(false);
 
-  // 로딩 메시지 상태 관리 (유틸리티 훅 사용)
-  const loadingMessage = useLoadingMessage(
-    isLoading,
-    "검색 중...",
-    "협찬 여부를 확인하고 있습니다. 잠시만 기다려주세요.",
-    2000
-  );
+  // initialQuery가 제공되면 쿼리 상태 초기화 (처음 한 번만)
+  useEffect(() => {
+    // 처음 마운트 시 초기 쿼리 설정
+    if (initialQuery && !initialQueryApplied.current) {
+      setQuery(initialQuery);
+      initialQueryApplied.current = true;
+    }
+  }, [initialQuery, setQuery]);
+
 
   const onSubmit = (e: FormEvent) => {
     e.preventDefault();
-    handleSearch();
+    
+    if (query) {
+      // 이미 검색 페이지에 있는지 확인
+      const currentPath = window.location.pathname;
+      const isOnSearchPage = currentPath.includes('/search');
+      
+      if (isOnSearchPage) {
+        // 이미 검색 페이지에 있으면 URL만 업데이트하고 검색 실행
+        router.push(`/search?q=${encodeURIComponent(query)}&page=1`);
+        handleSearch(query, 1);
+      } else {
+        // 메인 페이지에서는 검색 페이지로 이동만 수행
+        // 검색 페이지의 useEffect에서 검색이 실행될 것임
+        router.push(`/search?q=${encodeURIComponent(query)}&page=1`);
+      }
+    }
   };
 
   return (
@@ -81,14 +105,6 @@ export const SearchBar: React.FC<SearchBarProps> = ({ centered = false }) => {
         </button>
       </div>
 
-      {/* 로딩 중일 때 메시지 표시 */}
-      {isLoading && (
-        <div className="text-center mt-2">
-          <p className="text-sm text-gray-600 dark:text-gray-400">
-            {loadingMessage}
-          </p>
-        </div>
-      )}
     </form>
   );
 };
