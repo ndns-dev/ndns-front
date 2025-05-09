@@ -63,4 +63,5 @@ export interface SearchState {
   removePendingFetch: (page: number) => void;
   getPendingFetch: (page: number) => Promise<SearchApiResponse> | undefined;
   setCurrentPage: (page: number) => void;
+  clearLocalStorageCache: () => void;
 }
