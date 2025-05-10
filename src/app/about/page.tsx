@@ -1,17 +1,17 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { Header } from "@/components/common/navigation";
-import { RandomSearchChips } from "@/components/common/chip";
-import { Button } from "@/components/ui";
-import { RefreshCw } from "lucide-react";
+import { useState } from 'react';
+import { Header, Footer } from '@/components/common/navigation';
+import { RandomSearchChips } from '@/components/common/chip';
+import { Button } from '@/components/ui';
+import { RefreshCw } from 'lucide-react';
 
 export default function AboutPage() {
   const [refreshChips, setRefreshChips] = useState(false);
 
   // 새로고침 트리거 함수
   const triggerRefresh = () => {
-    setRefreshChips((prev) => !prev);
+    setRefreshChips(prev => !prev);
   };
 
   return (
@@ -28,13 +28,12 @@ export default function AboutPage() {
             <div className="space-y-6">
               <div className="prose dark:prose-invert max-w-none">
                 <p className="text-lg text-gray-700 dark:text-gray-300 leading-relaxed">
-                  내돈내산은 대가를 제공받지 않고 진짜 만족스러운 서비스의
-                  후기를 찾아주는 서비스입니다.
+                  내돈내산은 대가를 제공받지 않고 진짜 만족스러운 서비스의 후기를 찾아주는
+                  서비스입니다.
                 </p>
                 <p className="text-lg text-gray-700 dark:text-gray-300 leading-relaxed">
-                  특정 지역의 맛집, 구매를 원하는 기기 / 물품 등의 후기성
-                  포스트를 직접 확인하지 않고 미리 내돈내산 솔직 후기를 구분할
-                  수 있습니다.
+                  특정 지역의 맛집, 구매를 원하는 기기 / 물품 등의 후기성 포스트를 직접 확인하지
+                  않고 미리 내돈내산 솔직 후기를 구분할 수 있습니다.
                 </p>
               </div>
 
@@ -44,8 +43,7 @@ export default function AboutPage() {
                     진정성 있는 리뷰
                   </h2>
                   <p className="text-gray-700 dark:text-gray-300">
-                    광고나 홍보가 아닌 실제 사용자들의 솔직한 후기만을
-                    제공합니다.
+                    광고나 홍보가 아닌 실제 사용자들의 솔직한 후기만을 제공합니다.
                   </p>
                 </div>
 
@@ -79,11 +77,7 @@ export default function AboutPage() {
         </div>
       </main>
 
-      <footer className="py-6 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
-        <div className="container mx-auto px-4 text-center text-sm text-gray-600 dark:text-gray-400">
-          © 2025 내돈내산. All rights reserved.
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 }

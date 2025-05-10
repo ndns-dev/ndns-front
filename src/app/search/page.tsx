@@ -1,17 +1,17 @@
-"use client";
+'use client';
 
-import React, { useEffect, useRef } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import { Header } from "@/components/common/navigation";
-import { SearchBar } from "@/components/search/search-bar.component";
-import { SearchResults } from "@/components/search/search-result.component";
-import { useSearch } from "@/hooks/use-search.hook";
+import React, { useEffect, useRef } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { Header, Footer } from '@/components/common/navigation';
+import { SearchBar } from '@/components/search/search-bar.component';
+import { SearchResults } from '@/components/search/search-result.component';
+import { useSearch } from '@/hooks/use-search.hook';
 
 export default function SearchPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const queryParam = searchParams.get("q") || "";
-  const pageParam = parseInt(searchParams.get("page") || "1", 10);
+  const queryParam = searchParams.get('q') || '';
+  const pageParam = parseInt(searchParams.get('page') || '1', 10);
   const containerRef = useRef<HTMLDivElement>(null);
 
   const { results, error, currentPage, handleSearch, query } = useSearch();
@@ -22,9 +22,7 @@ export default function SearchPage() {
     if (queryParam) {
       // 현재 쿼리와 URL 쿼리가 다르거나 결과가 없는 경우 검색 수행
       if (queryParam !== query || !results) {
-        console.log(
-          `URL 파라미터로 새 검색 실행: ${queryParam}, 페이지: ${pageParam}`
-        );
+        console.log(`URL 파라미터로 새 검색 실행: ${queryParam}, 페이지: ${pageParam}`);
         handleSearch(queryParam, pageParam);
       }
       // URL의 페이지 파라미터와 현재 페이지가 다른 경우 해당 페이지로 이동
@@ -54,17 +52,13 @@ export default function SearchPage() {
     const container = containerRef.current;
     if (container) {
       // 시작 위치에서 원래 위치로 애니메이션
-      container.classList.add(
-        "transition-transform",
-        "duration-500",
-        "ease-out"
-      );
-      container.style.transform = "translateY(20px)";
-      container.style.opacity = "0";
+      container.classList.add('transition-transform', 'duration-500', 'ease-out');
+      container.style.transform = 'translateY(20px)';
+      container.style.opacity = '0';
 
       setTimeout(() => {
-        container.style.transform = "translateY(0)";
-        container.style.opacity = "1";
+        container.style.transform = 'translateY(0)';
+        container.style.opacity = '1';
       }, 100);
     }
   }, []);
@@ -93,11 +87,7 @@ export default function SearchPage() {
         </div>
       </main>
 
-      <footer className="py-6 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
-        <div className="container mx-auto px-4 text-center text-sm text-gray-600 dark:text-gray-400">
-          © 2025 내돈내산. All rights reserved.
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 }

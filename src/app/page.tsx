@@ -1,11 +1,11 @@
-"use client";
+'use client';
 
-import { useEffect, useRef, useState } from "react";
-import { Header } from "@/components/common/navigation";
-import { SearchBar } from "@/components/search/search-bar.component";
-import { RandomSearchChips } from "@/components/common/chip";
-import { Button } from "@/components/ui";
-import { RefreshCw } from "lucide-react";
+import { useEffect, useRef, useState } from 'react';
+import { Header, Footer } from '@/components/common/navigation';
+import { SearchBar } from '@/components/search/search-bar.component';
+import { RandomSearchChips } from '@/components/common/chip';
+import { Button } from '@/components/ui';
+import { RefreshCw } from 'lucide-react';
 
 export default function Home() {
   const searchContainerRef = useRef<HTMLDivElement>(null);
@@ -15,20 +15,20 @@ export default function Home() {
   useEffect(() => {
     const container = searchContainerRef.current;
     if (container) {
-      container.classList.add("transition-all", "duration-700", "ease-in-out");
-      container.style.opacity = "0";
-      container.style.transform = "translateY(20px)";
+      container.classList.add('transition-all', 'duration-700', 'ease-in-out');
+      container.style.opacity = '0';
+      container.style.transform = 'translateY(20px)';
 
       setTimeout(() => {
-        container.style.opacity = "1";
-        container.style.transform = "translateY(0)";
+        container.style.opacity = '1';
+        container.style.transform = 'translateY(0)';
       }, 300);
     }
   }, []);
 
   // 새로고침 트리거 함수
   const triggerRefresh = () => {
-    setRefreshChips((prev) => !prev);
+    setRefreshChips(prev => !prev);
   };
 
   return (
@@ -52,9 +52,7 @@ export default function Home() {
 
           <div className="mt-8 text-center">
             <div className="flex items-center justify-center mb-3">
-              <p className="text-sm text-gray-500 dark:text-gray-500">
-                예시 검색어
-              </p>
+              <p className="text-sm text-gray-500 dark:text-gray-500">예시 검색어</p>
               <Button
                 variant="outline"
                 size="icon"
@@ -78,11 +76,7 @@ export default function Home() {
         </div>
       </main>
 
-      <footer className="py-6 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
-        <div className="container mx-auto px-4 text-center text-sm text-gray-600 dark:text-gray-400">
-          © 2025 내돈내산. All rights reserved.
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 }
