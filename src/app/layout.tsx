@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
-import { ThemeProvider } from "@/components/common/theme-provider.component";
-import { ThemeToggle } from "@/components/common/theme-toggle.component";
-import { StateLoader } from "@/components/common/state-loader.component";
+import { ThemeProvider } from "@/components/common/theme";
+import { ThemeToggle } from "@/components/common/theme";
+import { StateLoader } from "@/components/common/feedback";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -24,9 +24,7 @@ export default function RootLayout({
         className={`${inter.className} bg-gray-50 dark:bg-gray-900 min-h-screen`}
       >
         <ThemeProvider>
-          <StateLoader>
-            {children}
-          </StateLoader>
+          <StateLoader>{children}</StateLoader>
           <ThemeToggle />
         </ThemeProvider>
       </body>

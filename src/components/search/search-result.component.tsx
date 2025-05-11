@@ -2,11 +2,12 @@
 
 import React from "react";
 import { SearchApiResponse } from "@/types/search.type";
-import Pagination from "../common/pagination.component";
 import { ResultCard } from "./search-card.component";
 import { useSearch } from "@/hooks/use-search.hook";
-import LoadingModal from "../common/loading-modal.component";
-import { AdBanner } from "../common/ad-banner.component";
+import { LoadingModal } from "@/components/common/feedback";
+import { AdBanner } from "@/components/common/marketing";
+import { Pagination } from "@/components/common/navigation";
+import { AlertCircle } from "lucide-react";
 
 interface SearchResultsProps {
   results: SearchApiResponse | null;
@@ -32,20 +33,7 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
       {error ? (
         <div className="mt-8 text-center">
           <div className="text-red-500 mb-2">
-            <svg
-              className="inline-block w-6 h-6 mr-1"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-              ></path>
-            </svg>
+            <AlertCircle className="inline-block w-6 h-6 mr-1" />
           </div>
           <p className="text-gray-600 dark:text-gray-400">{error}</p>
         </div>

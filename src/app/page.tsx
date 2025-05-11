@@ -1,11 +1,15 @@
 "use client";
 
-import { useEffect, useRef } from "react";
-import { Header } from "@/components/common/header.component";
+import { useEffect, useRef, useState } from "react";
+import { Header } from "@/components/common/navigation";
 import { SearchBar } from "@/components/search/search-bar.component";
+import { RandomSearchChips } from "@/components/common/chip";
+import { Button } from "@/components/ui";
+import { RefreshCw } from "lucide-react";
 
 export default function Home() {
   const searchContainerRef = useRef<HTMLDivElement>(null);
+  const [refreshChips, setRefreshChips] = useState(false);
 
   // 컴포넌트 마운트 시 애니메이션 효과
   useEffect(() => {
@@ -21,6 +25,11 @@ export default function Home() {
       }, 300);
     }
   }, []);
+
+  // 새로고침 트리거 함수
+  const triggerRefresh = () => {
+    setRefreshChips((prev) => !prev);
+  };
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -41,8 +50,30 @@ export default function Home() {
             <SearchBar centered />
           </div>
 
-          <div className="mt-8 text-sm text-gray-500 dark:text-gray-500 text-center">
-            예시 검색어: 강남 맛집, 신논현역 카페
+          <div className="mt-8 text-center">
+            <div className="flex items-center justify-center mb-3">
+              <p className="text-sm text-gray-500 dark:text-gray-500">
+                예시 검색어
+              </p>
+              <Button
+                variant="outline"
+                size="icon"
+                className="h-7 w-7 ml-2 bg-white dark:bg-gray-700 text-gray-500 dark:text-gray-300 hover:text-emerald-500 dark:hover:text-emerald-400"
+                onClick={triggerRefresh}
+                aria-label="검색어 새로고침"
+                title="다른 검색어 보기"
+              >
+                <RefreshCw className="h-4 w-4" />
+              </Button>
+            </div>
+            <RandomSearchChips
+              count={6}
+              className="justify-center"
+              searchable={true}
+              refreshInterval={8000} // 8초마다 자동 갱신
+              showRefreshButton={false} // 컴포넌트 내 버튼 숨김
+              key={`search-chips-${refreshChips}`} // 리렌더링 트리거용 키
+            />
           </div>
         </div>
       </main>

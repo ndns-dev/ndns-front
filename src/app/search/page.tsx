@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import React, { useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Header } from "@/components/common/header.component";
+import { Header } from "@/components/common/navigation";
 import { SearchBar } from "@/components/search/search-bar.component";
 import { SearchResults } from "@/components/search/search-result.component";
 import { useSearch } from "@/hooks/use-search.hook";

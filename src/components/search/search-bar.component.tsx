@@ -2,6 +2,9 @@ import React, { FormEvent, useEffect, useRef } from "react";
 import { useSearch } from "@/hooks/use-search.hook";
 import { useRouter } from "next/navigation";
 import { usePathname } from "next/navigation";
+import { Input, Button } from "@/components/ui";
+import { Search, Loader2 } from "lucide-react";
+import { cn } from "@/utils/class-name.util";
 
 interface SearchBarProps {
   centered?: boolean;
@@ -51,62 +54,33 @@ export const SearchBar: React.FC<SearchBarProps> = ({
   return (
     <form
       onSubmit={onSubmit}
-      className={`w-full ${!isSearchPage ? "max-w-2xl" : ""} ${
-        centered ? "mx-auto" : ""
-      }`}
+      className={cn(
+        "w-full",
+        !isSearchPage && "max-w-2xl",
+        centered && "mx-auto"
+      )}
     >
       <div className="relative">
-        <input
+        <Input
           type="text"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="검색어를 입력하세요 (예: 제주 애월 OO, OOO 건대입구점)"
-          className="w-full px-5 py-4 pr-16 text-lg rounded-full border border-gray-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent dark:bg-gray-800 dark:border-gray-700 dark:text-white"
+          className="w-full px-5 py-6 pr-16 text-lg rounded-full"
           disabled={isLoading}
         />
-        <button
+        <Button
           type="submit"
-          className="absolute right-3 top-1/2 transform -translate-y-1/2 bg-emerald-500 text-white p-3 rounded-full hover:bg-emerald-600 transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-700 disabled:opacity-50"
+          size="icon"
+          className="absolute right-2 top-1/2 transform -translate-y-1/2 rounded-full h-12 w-12"
           disabled={isLoading}
         >
           {isLoading ? (
-            <svg
-              className="animate-spin h-5 w-5"
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-            >
-              <circle
-                className="opacity-40"
-                cx="12"
-                cy="12"
-                r="10"
-                stroke="white"
-                strokeWidth="3"
-              ></circle>
-              <path
-                className="opacity-90"
-                fill="white"
-                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-              ></path>
-            </svg>
+            <Loader2 className="h-5 w-5 animate-spin" />
           ) : (
-            <svg
-              className="h-5 w-5"
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-              />
-            </svg>
+            <Search className="h-5 w-5" />
           )}
-        </button>
+        </Button>
       </div>
     </form>
   );

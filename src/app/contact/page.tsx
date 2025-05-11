@@ -1,6 +1,6 @@
 "use client";
 
-import { Header } from "@/components/common/header.component";
+import { Header } from "@/components/common/navigation";
 
 export default function ContactPage() {
   return (
