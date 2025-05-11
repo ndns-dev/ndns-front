@@ -25,6 +25,8 @@ const AVAILABLE_THEMES = [
   "purple",
   "pink",
   "indigo",
+  "teal",
+  "orange",
 ];
 
 // 사용 가능한 테마 타입 정의
