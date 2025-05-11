@@ -1,26 +1,20 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Header } from "@/components/common/header.component";
 import { SearchBar } from "@/components/search/search-bar.component";
 import { SearchResults } from "@/components/search/search-result.component";
 import { useSearch } from "@/hooks/use-search.hook";
-import { SponsorBanner } from "@/components/common/sponsor-banner.component";
 
 export default function SearchPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const queryParam = searchParams.get("q") || "";
   const pageParam = parseInt(searchParams.get("page") || "1", 10);
-  
-  const {
-    results,
-    error,
-    currentPage,
-    handleSearch,
-    query,
-  } = useSearch();
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  const { results, error, currentPage, handleSearch, query } = useSearch();
 
   // 컴포넌트 마운트 시 URL에서 쿼리 파라미터 가져와서 검색
   useEffect(() => {
@@ -28,9 +22,11 @@ export default function SearchPage() {
     if (queryParam) {
       // 현재 쿼리와 URL 쿼리가 다르거나 결과가 없는 경우 검색 수행
       if (queryParam !== query || !results) {
-        console.log(`URL 파라미터로 새 검색 실행: ${queryParam}, 페이지: ${pageParam}`);
+        console.log(
+          `URL 파라미터로 새 검색 실행: ${queryParam}, 페이지: ${pageParam}`
+        );
         handleSearch(queryParam, pageParam);
-      } 
+      }
       // URL의 페이지 파라미터와 현재 페이지가 다른 경우 해당 페이지로 이동
       else if (pageParam !== currentPage) {
         console.log(`URL 페이지 파라미터로 페이지 변경: ${pageParam}`);
@@ -53,16 +49,39 @@ export default function SearchPage() {
     }
   };
 
+  // 컴포넌트 마운트 시 애니메이션 효과
+  useEffect(() => {
+    const container = containerRef.current;
+    if (container) {
+      // 시작 위치에서 원래 위치로 애니메이션
+      container.classList.add(
+        "transition-transform",
+        "duration-500",
+        "ease-out"
+      );
+      container.style.transform = "translateY(20px)";
+      container.style.opacity = "0";
+
+      setTimeout(() => {
+        container.style.transform = "translateY(0)";
+        container.style.opacity = "1";
+      }, 100);
+    }
+  }, []);
+
   return (
     <div className="flex flex-col min-h-screen">
       <Header />
-      
-      <SponsorBanner position="top" />
-      
+
       <main className="flex-grow flex flex-col items-center px-4 py-8">
-        <div className="w-full max-w-4xl mx-auto pt-8">
-          <div className="w-full mb-8">
-            <SearchBar initialQuery={queryParam} />
+        <div
+          ref={containerRef}
+          className="w-full max-w-4xl mx-auto pt-8 transition-all duration-500"
+        >
+          <div className="w-full mb-8 flex justify-center">
+            <div className="w-full max-w-2xl">
+              <SearchBar initialQuery={queryParam} isSearchPage={false} />
+            </div>
           </div>
 
           <SearchResults
@@ -81,4 +100,4 @@ export default function SearchPage() {
       </footer>
     </div>
   );
-} 
+}

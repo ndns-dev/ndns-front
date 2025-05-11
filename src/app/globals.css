@@ -22,6 +22,30 @@ body {
   background-color: white;
 }
 
+/* 트랜지션 효과 */
+.slide-up-enter {
+  transform: translateY(20px);
+  opacity: 0;
+}
+
+.slide-up-enter-active {
+  transform: translateY(0);
+  opacity: 1;
+  transition: opacity 500ms, transform 500ms;
+}
+
+.slide-up-exit {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+.slide-up-exit-active {
+  transform: translateY(-20px);
+  opacity: 0;
+  transition: opacity 300ms, transform 300ms;
+}
+
+/* 다크 모드 수정 */
 .dark .bg-white {
   background-color: #1a1a1a !important;
 }
