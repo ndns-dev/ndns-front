@@ -10,7 +10,10 @@
     "deploy": "next build && aws s3 sync ./out s3://ndns-front/ --delete --profile ndns && aws cloudfront create-invalidation --distribution-id EGAPSQGYN3RVU --paths '/*' --profile ndns"
   },
   "dependencies": {
-    "next": "15.3.1",
+    "@radix-ui/react-avatar": "^1.1.9",
+    "@radix-ui/react-icons": "^1.3.2",
+    "@radix-ui/react-slot": "^1.2.2",
+    "next": "^15.3.1",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "zod": "^3.24.3",
@@ -22,9 +25,14 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
     "eslint": "^9",
     "eslint-config-next": "15.3.1",
+    "lucide-react": "^0.509.0",
+    "tailwind-merge": "^3.2.0",
     "tailwindcss": "^4",
+    "tailwindcss-animate": "^1.0.7",
     "typescript": "^5"
   }
 }
