@@ -6,11 +6,13 @@ import { usePathname } from "next/navigation";
 interface SearchBarProps {
   centered?: boolean;
   initialQuery?: string;
+  isSearchPage?: boolean;
 }
 
-export const SearchBar: React.FC<SearchBarProps> = ({ 
+export const SearchBar: React.FC<SearchBarProps> = ({
   centered = false,
-  initialQuery = "" 
+  initialQuery = "",
+  isSearchPage = false,
 }) => {
   const router = useRouter();
   const pathname = usePathname();
@@ -29,11 +31,11 @@ export const SearchBar: React.FC<SearchBarProps> = ({
 
   const onSubmit = (e: FormEvent) => {
     e.preventDefault();
-    
+
     if (query) {
       // 이미 검색 페이지에 있는지 확인
-      const isOnSearchPage = pathname.includes('/search');
-      
+      const isOnSearchPage = pathname.includes("/search");
+
       if (isOnSearchPage) {
         // 이미 검색 페이지에 있으면 URL만 업데이트하고 검색 실행
         router.push(`/search?q=${encodeURIComponent(query)}&page=1`);
@@ -49,7 +51,9 @@ export const SearchBar: React.FC<SearchBarProps> = ({
   return (
     <form
       onSubmit={onSubmit}
-      className={`w-full max-w-2xl ${centered ? "mx-auto" : ""}`}
+      className={`w-full ${!isSearchPage ? "max-w-2xl" : ""} ${
+        centered ? "mx-auto" : ""
+      }`}
     >
       <div className="relative">
         <input
