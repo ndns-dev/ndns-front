@@ -35,7 +35,7 @@ export const ChipGroup: React.FC<ChipGroupProps> = ({
 
     // 모든 칩에 고유한 테마 지정
     return getUniqueRandomThemes(labels.length);
-  }, [labels.length, themes, reusableThemes]);
+  }, [labels, themes, reusableThemes]);
 
   return (
     <div className={`flex flex-wrap ${className}`}>

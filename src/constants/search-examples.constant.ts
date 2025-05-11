@@ -1,5 +1,5 @@
 // 자주 사용되는 검색 예시들
-import { ChipTheme, getUniqueRandomThemes } from "@/components/common/chip";
+import { ChipTheme } from "@/components/common/chip";
 
 // 상세 지역 키워드 (근처 적용 가능)
 export const SPECIFIC_LOCATIONS = [

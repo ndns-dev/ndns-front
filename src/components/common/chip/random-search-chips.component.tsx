@@ -1,9 +1,11 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { getRandomSearchQueries } from "@/constants/search-examples.constant";
 import { Button, Badge } from "@/components/ui";
 import { RefreshCw, Search } from "lucide-react";
+import { VariantProps } from "class-variance-authority";
+import { badgeVariants } from "@/components/ui/badge.component";
 
 interface RandomSearchChipsProps {
   count?: number;
@@ -24,6 +26,12 @@ const AVAILABLE_THEMES = [
   "pink",
   "indigo",
 ];
+
+// 사용 가능한 테마 타입 정의
+type AvailableThemes = Pick<
+  VariantProps<typeof badgeVariants>,
+  "variant"
+>["variant"];
 
 // 중복 없는 랜덤 테마 배열 생성 함수
 function getUniqueRandomThemes(count: number): string[] {
@@ -62,7 +70,7 @@ export function RandomSearchChips({
   >([]);
 
   // 랜덤 예시 새로고침 함수
-  const refreshExamples = () => {
+  const refreshExamples = useCallback(() => {
     const queries = getRandomSearchQueries(count);
     const randomThemes = getUniqueRandomThemes(count);
 
@@ -72,7 +80,7 @@ export function RandomSearchChips({
         theme: randomThemes[index % randomThemes.length],
       }))
     );
-  };
+  }, [count]);
 
   // 컴포넌트 마운트 시 및 의존성 변경 시 예시 새로고침
   useEffect(() => {
@@ -83,14 +91,14 @@ export function RandomSearchChips({
       const interval = setInterval(refreshExamples, refreshInterval);
       return () => clearInterval(interval);
     }
-  }, [count, refreshInterval]);
+  }, [count, refreshInterval, refreshExamples]);
 
   return (
     <div className={`flex flex-wrap ${className}`}>
       {examples.map((example, index) => (
         <Badge
           key={`${example.label}-${index}`}
-          variant={example.theme as any}
+          variant={example.theme as AvailableThemes}
           className="mr-2 mb-2 cursor-pointer flex items-center gap-1 !text-gray-700 !bg-opacity-100"
           onClick={() => {
             if (searchable) {
