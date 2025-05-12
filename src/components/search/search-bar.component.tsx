@@ -1,10 +1,10 @@
-import React, { FormEvent, useEffect, useRef } from "react";
-import { useSearch } from "@/hooks/use-search.hook";
-import { useRouter } from "next/navigation";
-import { usePathname } from "next/navigation";
-import { Input, Button } from "@/components/ui";
-import { Search, Loader2 } from "lucide-react";
-import { cn } from "@/utils/class-name.util";
+import React, { FormEvent, useEffect, useRef } from 'react';
+import { useSearch } from '@/hooks/use-search.hook';
+import { useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
+import { Input, Button } from '@/components/ui';
+import { Search, Loader2 } from 'lucide-react';
+import { cn } from '@/utils/class-name.util';
 
 interface SearchBarProps {
   centered?: boolean;
@@ -14,7 +14,7 @@ interface SearchBarProps {
 
 export const SearchBar: React.FC<SearchBarProps> = ({
   centered = false,
-  initialQuery = "",
+  initialQuery = '',
   isSearchPage = false,
 }) => {
   const router = useRouter();
@@ -37,7 +37,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
 
     if (query) {
       // 이미 검색 페이지에 있는지 확인
-      const isOnSearchPage = pathname.includes("/search");
+      const isOnSearchPage = pathname.includes('/search');
 
       if (isOnSearchPage) {
         // 이미 검색 페이지에 있으면 URL만 업데이트하고 검색 실행
@@ -54,17 +54,13 @@ export const SearchBar: React.FC<SearchBarProps> = ({
   return (
     <form
       onSubmit={onSubmit}
-      className={cn(
-        "w-full",
-        !isSearchPage && "max-w-2xl",
-        centered && "mx-auto"
-      )}
+      className={cn('w-full', !isSearchPage && 'max-w-2xl', centered && 'mx-auto')}
     >
       <div className="relative">
         <Input
           type="text"
           value={query}
-          onChange={(e) => setQuery(e.target.value)}
+          onChange={e => setQuery(e.target.value)}
           placeholder="검색어를 입력하세요 (예: 제주 애월 OO, OOO 건대입구점)"
           className="w-full px-5 py-6 pr-16 text-lg rounded-full"
           disabled={isLoading}
@@ -72,13 +68,13 @@ export const SearchBar: React.FC<SearchBarProps> = ({
         <Button
           type="submit"
           size="icon"
-          className="absolute right-2 top-1/2 transform -translate-y-1/2 rounded-full h-12 w-12"
+          className="absolute right-2 top-1/2 transform -translate-y-1/2 rounded-full h-11 w-11 bg-transparent hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
           disabled={isLoading}
         >
           {isLoading ? (
-            <Loader2 className="h-5 w-5 animate-spin" />
+            <Loader2 className="h-5 w-5 animate-spin text-emerald-500" />
           ) : (
-            <Search className="h-5 w-5" />
+            <Search className="h-5 w-5 text-emerald-500" />
           )}
         </Button>
       </div>
