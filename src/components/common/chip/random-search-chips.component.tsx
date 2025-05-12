@@ -101,15 +101,16 @@ export function RandomSearchChips({
   };
 
   return (
-    <div className={`flex flex-wrap ${className}`}>
+    <div className={`flex flex-wrap ${className} w-full h-full`}>
       {examples.map((example, index) => (
         <Badge
           key={`${example.label}-${index}`}
           variant={example.theme as AvailableThemes}
-          className="mr-2 mb-2 cursor-pointer flex items-center gap-1 !text-gray-700 !bg-opacity-100"
+          className="mr-2 mb-2 cursor-pointer flex items-center gap-1 !text-gray-700 !bg-opacity-100 px-3 py-1 whitespace-nowrap"
           onClick={() => handleSearch(example.label)}
         >
-          <Search size={10} className="mr-0.5" /> {example.label}
+          <Search size={10} className="mr-0.5 flex-shrink-0" />
+          <span className="truncate">{example.label}</span>
         </Badge>
       ))}
 
@@ -118,7 +119,7 @@ export function RandomSearchChips({
           variant="outline"
           size="icon"
           onClick={refreshExamples}
-          className="flex items-center justify-center w-8 h-8 mr-2 mb-2 text-gray-500 dark:text-gray-300 hover:text-emerald-500 dark:hover:text-emerald-400 bg-white dark:bg-gray-700"
+          className="flex items-center justify-center w-8 h-8 mr-2 mb-2 text-gray-500 dark:text-gray-300 hover:text-emerald-500 dark:hover:text-emerald-400 bg-white dark:bg-gray-700 flex-shrink-0"
           aria-label="검색어 새로고침"
           title="다른 검색어 보기"
         >

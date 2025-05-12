@@ -64,14 +64,16 @@ export default function Home() {
                 <RefreshCw className="h-4 w-4" />
               </Button>
             </div>
-            <RandomSearchChips
-              count={6}
-              className="justify-center"
-              searchable={true}
-              refreshInterval={8000} // 8초마다 자동 갱신
-              showRefreshButton={false} // 컴포넌트 내 버튼 숨김
-              key={`search-chips-${refreshChips}`} // 리렌더링 트리거용 키
-            />
+            <div className="min-h-[88px]">
+              <RandomSearchChips
+                count={6}
+                className="justify-center"
+                searchable={true}
+                refreshInterval={8000} // 8초마다 자동 갱신
+                showRefreshButton={false} // 컴포넌트 내 버튼 숨김
+                key={`search-chips-${refreshChips}`} // 리렌더링 트리거용 키
+              />
+            </div>
           </div>
         </div>
       </main>
