@@ -68,16 +68,17 @@ export default function SearchPage() {
       <Header />
 
       <main className="flex-grow flex flex-col items-center px-4 py-8">
+        <div className="w-full max-w-4xl mx-auto mb-8 flex justify-center">
+          <div className="w-full max-w-2xl">
+            <SearchBar initialQuery={queryParam} isSearchPage={false} />
+          </div>
+        </div>
+
         <div
           ref={containerRef}
-          className="w-full max-w-4xl mx-auto pt-8 transition-all duration-500"
+          className="w-full max-w-4xl mx-auto transition-all duration-500"
+          id="search-results-container"
         >
-          <div className="w-full mb-8 flex justify-center">
-            <div className="w-full max-w-2xl">
-              <SearchBar initialQuery={queryParam} isSearchPage={false} />
-            </div>
-          </div>
-
           <SearchResults
             results={results}
             error={error}
