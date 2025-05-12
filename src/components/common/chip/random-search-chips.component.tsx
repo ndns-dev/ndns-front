@@ -1,11 +1,12 @@
-"use client";
+'use client';
 
-import React, { useEffect, useState, useCallback } from "react";
-import { getRandomSearchQueries } from "@/constants/search-examples.constant";
-import { Button, Badge } from "@/components/ui";
-import { RefreshCw, Search } from "lucide-react";
-import { VariantProps } from "class-variance-authority";
-import { badgeVariants } from "@/components/ui/badge.component";
+import React, { useEffect, useState, useCallback } from 'react';
+import { getRandomSearchQueries } from '@/constants/search-examples.constant';
+import { Button, Badge } from '@/components/ui';
+import { RefreshCw, Search } from 'lucide-react';
+import { VariantProps } from 'class-variance-authority';
+import { badgeVariants } from '@/components/ui/badge.component';
+import { useRouter } from 'next/navigation';
 
 interface RandomSearchChipsProps {
   count?: number;
@@ -17,23 +18,20 @@ interface RandomSearchChipsProps {
 
 // 사용 가능한 테마 목록
 const AVAILABLE_THEMES = [
-  "secondary",
-  "green",
-  "blue",
-  "red",
-  "yellow",
-  "purple",
-  "pink",
-  "indigo",
-  "teal",
-  "orange",
+  'secondary',
+  'green',
+  'blue',
+  'red',
+  'yellow',
+  'purple',
+  'pink',
+  'indigo',
+  'teal',
+  'orange',
 ];
 
 // 사용 가능한 테마 타입 정의
-type AvailableThemes = Pick<
-  VariantProps<typeof badgeVariants>,
-  "variant"
->["variant"];
+type AvailableThemes = Pick<VariantProps<typeof badgeVariants>, 'variant'>['variant'];
 
 // 중복 없는 랜덤 테마 배열 생성 함수
 function getUniqueRandomThemes(count: number): string[] {
@@ -62,14 +60,13 @@ function getUniqueRandomThemes(count: number): string[] {
 
 export function RandomSearchChips({
   count = 6,
-  className = "",
+  className = '',
   searchable = true,
   refreshInterval = null,
   showRefreshButton = true, // 기본값을 true로 설정
 }: RandomSearchChipsProps) {
-  const [examples, setExamples] = useState<
-    Array<{ label: string; theme: string }>
-  >([]);
+  const router = useRouter();
+  const [examples, setExamples] = useState<Array<{ label: string; theme: string }>>([]);
 
   // 랜덤 예시 새로고침 함수
   const refreshExamples = useCallback(() => {
@@ -95,6 +92,14 @@ export function RandomSearchChips({
     }
   }, [count, refreshInterval, refreshExamples]);
 
+  // 검색 처리 함수
+  const handleSearch = (query: string) => {
+    if (searchable) {
+      // 검색 페이지로 이동하고 쿼리 파라미터 전달
+      router.push(`/search?q=${encodeURIComponent(query)}&page=1`);
+    }
+  };
+
   return (
     <div className={`flex flex-wrap ${className}`}>
       {examples.map((example, index) => (
@@ -102,12 +107,7 @@ export function RandomSearchChips({
           key={`${example.label}-${index}`}
           variant={example.theme as AvailableThemes}
           className="mr-2 mb-2 cursor-pointer flex items-center gap-1 !text-gray-700 !bg-opacity-100"
-          onClick={() => {
-            if (searchable) {
-              // handle search functionality if needed
-              console.log(`Searching for: ${example.label}`);
-            }
-          }}
+          onClick={() => handleSearch(example.label)}
         >
           <Search size={10} className="mr-0.5" /> {example.label}
         </Badge>
