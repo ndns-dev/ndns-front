@@ -1,10 +1,10 @@
-import React, { FormEvent, useEffect, useRef } from 'react';
+import React, { FormEvent, useEffect, useRef, useState } from 'react';
 import { useSearch } from '@/hooks/use-search.hook';
 import { useRouter } from 'next/navigation';
 import { usePathname } from 'next/navigation';
-import { Input, Button } from '@/components/ui';
-import { Search, Loader2 } from 'lucide-react';
 import { cn } from '@/utils/class-name.util';
+import { useSearchUIStore } from '@/store/search-ui.store';
+import { SearchForm } from './search-form.component';
 
 interface SearchBarProps {
   centered?: boolean;
@@ -20,6 +20,12 @@ export const SearchBar: React.FC<SearchBarProps> = ({
   const router = useRouter();
   const pathname = usePathname();
   const { query, setQuery, handleSearch, isLoading } = useSearch();
+  const formRef = useRef<HTMLFormElement>(null);
+  const searchBarRef = useRef<HTMLDivElement>(null);
+  const [isSticky, setIsSticky] = useState(false);
+  const [opacity, setOpacity] = useState(1);
+  const searchUIStore = useSearchUIStore();
+
   // initialQuery가 적용되었는지 추적하는 ref
   const initialQueryApplied = useRef(false);
 
@@ -31,6 +37,63 @@ export const SearchBar: React.FC<SearchBarProps> = ({
       initialQueryApplied.current = true;
     }
   }, [initialQuery, setQuery]);
+
+  // 스크롤 위치에 따라 검색바 위치 조정
+  useEffect(() => {
+    if (!pathname.includes('/search') || !searchBarRef.current) return;
+
+    // 초기 상태 설정
+    setIsSticky(false);
+    setOpacity(1);
+    searchUIStore.setSearchBarMode('origin');
+
+    // 스크롤을 통한 사이드바 노출 관련 상수
+    const START_FADE_OFFSET = 0; // 스크롤 즉시 시작
+    const FULL_FADE_OFFSET = 200; // 이 위치에서 완전히 전환됨
+    const FADE_RANGE = FULL_FADE_OFFSET - START_FADE_OFFSET;
+
+    const checkScroll = () => {
+      const scrollY = window.scrollY;
+
+      // 단순한 선형 계산
+      // START_FADE_OFFSET보다 작으면 0, FULL_FADE_OFFSET보다 크면 1, 그 사이는 비례 계산
+      const progress = Math.max(0, Math.min(1, (scrollY - START_FADE_OFFSET) / FADE_RANGE));
+
+      // 단순하게 메인 검색바와 사이드바 검색바의 opacity를 정반대로 설정
+      const mainOpacity = 1 - progress;
+      const sidebarOpacity = progress;
+      setOpacity(mainOpacity);
+
+      // 스토어에 투명도 값 업데이트
+      if (typeof searchUIStore.setStickyOpacity === 'function') {
+        searchUIStore.setStickyOpacity(sidebarOpacity);
+      }
+
+      // UI 모드 상태 업데이트 - 중간 지점인 0.5를 기준으로 모드 전환
+      const currentMode = searchUIStore.searchBarMode;
+      const shouldBeSticky = progress > 0.5;
+
+      if (shouldBeSticky !== (currentMode === 'sidebar')) {
+        searchUIStore.setSearchBarMode(shouldBeSticky ? 'sidebar' : 'origin');
+        searchUIStore.setTransition(true);
+      } else if (progress > 0 && progress < 1) {
+        searchUIStore.setTransition(true);
+      } else {
+        searchUIStore.setTransition(false);
+      }
+    };
+
+    // 스크롤 이벤트
+    window.addEventListener('scroll', checkScroll, { passive: true });
+
+    // 초기 위치 확인
+    checkScroll();
+
+    return () => {
+      window.removeEventListener('scroll', checkScroll);
+      searchUIStore.setSearchBarMode('origin');
+    };
+  }, [pathname, searchUIStore.setSearchBarMode, searchUIStore.setStickyOpacity]);
 
   const onSubmit = (e: FormEvent) => {
     e.preventDefault();
@@ -52,32 +115,83 @@ export const SearchBar: React.FC<SearchBarProps> = ({
   };
 
   return (
-    <form
-      onSubmit={onSubmit}
-      className={cn('w-full', !isSearchPage && 'max-w-2xl', centered && 'mx-auto')}
-    >
-      <div className="relative">
-        <Input
-          type="text"
-          value={query}
-          onChange={e => setQuery(e.target.value)}
-          placeholder="검색어를 입력하세요 (예: 제주 애월 OO, OOO 건대입구점)"
-          className="w-full px-5 py-6 pr-16 text-lg rounded-full"
-          disabled={isLoading}
-        />
-        <Button
-          type="submit"
-          size="icon"
-          className="absolute right-2 top-1/2 transform -translate-y-1/2 rounded-full h-11 w-11 bg-transparent hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-          disabled={isLoading}
-        >
-          {isLoading ? (
-            <Loader2 className="h-5 w-5 animate-spin text-emerald-500" />
-          ) : (
-            <Search className="h-5 w-5 text-emerald-500" />
-          )}
-        </Button>
+    <>
+      {/* 원래 위치의 검색 폼 */}
+      <div
+        ref={searchBarRef}
+        className="w-full h-[68px]"
+        style={{
+          opacity: opacity,
+          visibility: opacity < 0.01 ? 'hidden' : 'visible', // 완전히 투명해지면 hidden으로 변경
+          transition: 'opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.2s', // 부드러운 전환
+        }}
+      >
+        <div className="relative" style={{ opacity: Math.min(1, opacity * 2) }}>
+          <SearchForm
+            onSubmit={onSubmit}
+            query={query}
+            setQuery={setQuery}
+            isLoading={isLoading}
+            placeholder="검색어를 입력하세요 (예: 제주 애월 OO, OOO 건대입구점)"
+            className={cn(!isSearchPage && 'max-w-2xl', centered && 'mx-auto')}
+            inputClassName="w-full px-5 py-6 pr-16 text-lg rounded-full"
+            buttonSize="default"
+            formRef={formRef as React.RefObject<HTMLFormElement>}
+          />
+        </div>
       </div>
-    </form>
+
+      {/* 스티키 검색 폼 (데스크톱) */}
+      {!pathname.includes('/search') && (
+        <div
+          className={cn(
+            'fixed shadow-md hidden lg:block transition-all duration-300 ease-in-out',
+            isSticky ? 'opacity-100' : 'opacity-0 pointer-events-none'
+          )}
+          style={{
+            transition: 'opacity 0.4s ease, top 0.4s ease',
+            boxShadow: isSticky ? '0 4px 12px rgba(0, 0, 0, 0.15)' : 'none',
+            width: '256px', // w-64와 동일한 너비
+            right: 'calc(50% - 32rem + 20px)', // 중앙 기준 옆으로 이동
+            top: isSticky ? '16px' : '-5rem',
+            zIndex: 10,
+          }}
+        >
+          <SearchForm
+            onSubmit={onSubmit}
+            query={query}
+            setQuery={setQuery}
+            isLoading={isLoading}
+            placeholder="검색어를 입력하세요"
+            inputClassName="w-full px-4 py-3 pr-12 text-base rounded-full"
+            buttonSize="small"
+          />
+        </div>
+      )}
+
+      {/* 모바일 및 태블릿용 스티키 검색 폼 */}
+      {!pathname.includes('/search') && (
+        <div
+          className={cn(
+            'lg:hidden fixed bottom-4 left-4 right-4 z-10 transition-all duration-300 ease-in-out',
+            isSticky ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-20 pointer-events-none'
+          )}
+          style={{
+            transition: 'opacity 0.4s ease, transform 0.4s ease',
+            boxShadow: isSticky ? '0 4px 12px rgba(0, 0, 0, 0.15)' : 'none',
+          }}
+        >
+          <SearchForm
+            onSubmit={onSubmit}
+            query={query}
+            setQuery={setQuery}
+            isLoading={isLoading}
+            placeholder="검색어를 입력하세요"
+            inputClassName="w-full px-4 py-3 pr-12 text-base rounded-full shadow-lg"
+            buttonSize="small"
+          />
+        </div>
+      )}
+    </>
   );
 };

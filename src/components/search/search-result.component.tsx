@@ -1,13 +1,13 @@
-"use client";
+'use client';
 
-import React from "react";
-import { SearchApiResponse } from "@/types/search.type";
-import { ResultCard } from "./search-card.component";
-import { useSearch } from "@/hooks/use-search.hook";
-import { LoadingModal } from "@/components/common/feedback";
-import { AdBanner } from "@/components/common/marketing";
-import { Pagination } from "@/components/common/navigation";
-import { AlertCircle } from "lucide-react";
+import React from 'react';
+import { SearchApiResponse } from '@/types/search.type';
+import { ResultCard } from './search-card.component';
+import { useSearch } from '@/hooks/use-search.hook';
+import { LoadingModal } from '@/components/common/feedback';
+import { AdBanner, Sidebar } from '@/components/common/marketing';
+import { Pagination } from '@/components/common/navigation';
+import { AlertCircle } from 'lucide-react';
 
 interface SearchResultsProps {
   results: SearchApiResponse | null;
@@ -39,9 +39,7 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
         </div>
       ) : !isLoading && (!results || results.posts.length === 0) ? (
         <div className="mt-8 text-center">
-          <p className="text-gray-600 dark:text-gray-400">
-            검색 결과가 없습니다.
-          </p>
+          <p className="text-gray-600 dark:text-gray-400">검색 결과가 없습니다.</p>
         </div>
       ) : (
         results &&
@@ -51,32 +49,24 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
               <div className="lg:flex-1">
                 <div className="mb-6">
                   <h2 className="text-xl font-bold text-gray-800 dark:text-white mb-4">
-                    &apos;{results.keyword}&apos; 검색 결과 (총{" "}
+                    &apos;{results.keyword}&apos; 검색 결과 (총{' '}
                     {results.totalResults.toLocaleString()}개)
                   </h2>
 
                   <div className="flex space-x-2 mb-4">
                     <div className="bg-white dark:bg-gray-800 px-4 py-2 rounded-lg shadow-sm">
                       <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                        협찬 포스트:{" "}
+                        협찬 포스트:{' '}
                         <span className="text-red-500 font-semibold">
-                          {
-                            results.posts.filter((post) => post.isSponsored)
-                              .length
-                          }
-                          개
+                          {results.posts.filter(post => post.isSponsored).length}개
                         </span>
                       </p>
                     </div>
                     <div className="bg-white dark:bg-gray-800 px-4 py-2 rounded-lg shadow-sm">
                       <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                        내돈내산 포스트:{" "}
+                        내돈내산 포스트:{' '}
                         <span className="text-green-500 font-semibold">
-                          {
-                            results.posts.filter((post) => !post.isSponsored)
-                              .length
-                          }
-                          개
+                          {results.posts.filter(post => !post.isSponsored).length}개
                         </span>
                       </p>
                     </div>
@@ -84,35 +74,31 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
                 </div>
 
                 <div className="space-y-4">
-                  {results.posts.filter((post) => !post.isSponsored).length >
-                    0 && (
+                  {results.posts.filter(post => !post.isSponsored).length > 0 && (
                     <div>
                       <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4 border-b pb-2">
                         <span className="text-green-500">내돈내산</span> 후기
                       </h3>
                       {results.posts
-                        .filter((post) => !post.isSponsored)
+                        .filter(post => !post.isSponsored)
                         .map((post, index) => (
-                          <ResultCard
-                            key={`non-sponsored-${index}`}
-                            post={post}
-                          />
+                          <ResultCard key={`non-sponsored-${index}`} post={post} />
                         ))}
 
                       {/* 내돈내산 결과 아래 광고 배너 */}
-                      {results.posts.filter((post) => !post.isSponsored)
-                        .length >= 3 && <AdBanner position="inline" />}
+                      {results.posts.filter(post => !post.isSponsored).length >= 3 && (
+                        <AdBanner position="inline" />
+                      )}
                     </div>
                   )}
 
-                  {results.posts.filter((post) => post.isSponsored).length >
-                    0 && (
+                  {results.posts.filter(post => post.isSponsored).length > 0 && (
                     <div className="mt-8">
                       <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4 border-b pb-2">
                         <span className="text-red-500">협찬</span> 후기
                       </h3>
                       {results.posts
-                        .filter((post) => post.isSponsored)
+                        .filter(post => post.isSponsored)
                         .map((post, index) => (
                           <ResultCard key={`sponsored-${index}`} post={post} />
                         ))}
@@ -132,23 +118,8 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
                 </div>
               </div>
 
-              {/* 사이드바 - 후원 배너 */}
-              <div className="hidden lg:block lg:w-64 mt-14">
-                <div className="sticky top-4">
-                  {/* 사이드바 광고 */}
-                  <AdBanner position="sidebar" />
-
-                  <div className="mt-4 bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
-                    <h4 className="font-medium text-gray-800 dark:text-gray-200 mb-2">
-                      내돈내산 소개
-                    </h4>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">
-                      정확한 검색 결과를 위해 빅데이터와 인공지능 기술을
-                      활용하여 협찬 포스트를 식별합니다.
-                    </p>
-                  </div>
-                </div>
-              </div>
+              {/* 사이드바를 별도 컴포넌트로 대체 */}
+              <Sidebar />
             </div>
           </div>
         )
