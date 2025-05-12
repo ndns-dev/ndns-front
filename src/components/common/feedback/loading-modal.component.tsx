@@ -30,19 +30,19 @@ export const LoadingModal: React.FC<LoadingModalProps> = ({
 
     const timer1 = setTimeout(() => {
       setDisplayMessage(prev => (prev === message ? `${message}.` : prev));
-    }, 3000);
+    }, 2000);
 
     const timer2 = setTimeout(() => {
       setDisplayMessage(prev => (prev === `${message}.` ? `${message}..` : prev));
-    }, 5000);
+    }, 4000);
 
     const timer3 = setTimeout(() => {
       setDisplayMessage('혹시 협찬인지 다시 한 번 꼼꼼히 확인하고 있어요.');
-    }, 7000);
+    }, 6000);
 
     const timer4 = setTimeout(() => {
       setSubMessage('거의 다 왔어요. 조금만 더 기다려 주세요.');
-    }, 10000);
+    }, 8000);
 
     return () => {
       clearTimeout(timer1);
