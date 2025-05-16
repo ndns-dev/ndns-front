@@ -1,15 +1,11 @@
-import { create } from "zustand";
-import { persist, createJSONStorage } from "zustand/middleware";
-import {
-  SearchApiResponse,
-  CachedResults,
-  SearchState,
-} from "@/types/search.type";
+import { create } from 'zustand';
+import { persist, createJSONStorage } from 'zustand/middleware';
+import { SearchApiResponse, CachedResults, SearchState } from '@/types/search.type';
 
 export const useSearchStore = create<SearchState>()(
   persist(
     (set, get) => ({
-      query: "",
+      query: '',
       results: null,
       isLoading: false,
       error: null,
@@ -72,54 +68,36 @@ export const useSearchStore = create<SearchState>()(
       },
       resetSearch: () =>
         set({
-          query: "",
+          query: '',
           results: null,
           isLoading: false,
           error: null,
           hasSearched: false,
           currentPage: 1,
-          // cachedResults와 pendingFetches는 유지
-          // 완전히 초기화하려면 아래 주석을 해제
-          // cachedResults: {} as CachedResults,
-          // pendingFetches: new Map(),
         }),
-      setPendingFetch: (page, promise) => 
+      setPendingFetch: (page, promise) =>
         set(state => {
           const newMap = new Map(state.pendingFetches);
           newMap.set(page, promise);
           return { pendingFetches: newMap };
         }),
-      removePendingFetch: (page) => 
+      removePendingFetch: page =>
         set(state => {
           const newMap = new Map(state.pendingFetches);
           newMap.delete(page);
           return { pendingFetches: newMap };
         }),
-      getPendingFetch: (page) => get().pendingFetches.get(page),
+      getPendingFetch: page => get().pendingFetches.get(page),
       setCurrentPage: (page: number) => set({ currentPage: page }),
-      // 로컬 스토리지에서 검색 캐시를 완전히 제거하는 함수
       clearSearchQuery: () => {
-        // 로컬 스토리지에서 검색 캐시 삭제
-        if (typeof window !== 'undefined') {
-          localStorage.removeItem('search-cache');
-          
-          // 캐시는 유지하고 검색어만 초기화
-          set({
-            query: "",
-            results: null,
-            isLoading: false,
-            error: null,
-            hasSearched: false,
-            currentPage: 1,
-          });
-        }
+        // 캐시는 유지하고 검색어만 초기화
+        set({ query: '' });
       },
     }),
     {
-      name: "search-cache",
+      name: 'search-cache',
       storage: createJSONStorage(() => localStorage),
-      // pendingFetches는 Promise 객체를 포함하므로 직렬화할 수 없어 제외함
-      partialize: (state) => ({
+      partialize: state => ({
         query: state.query,
         results: state.results,
         cachedResults: state.cachedResults,
@@ -134,19 +112,37 @@ export const useSearchStore = create<SearchState>()(
 // 새로고침 후 초기화 로직: 저장된 캐시에서 마지막 결과 복원
 if (typeof window !== 'undefined') {
   // 브라우저 환경에서만 실행 - 즉시 실행 (setTimeout 제거)
-  const { query, currentPage, hasSearched, results, getCachedResults, setResults, setLoading } = useSearchStore.getState();
-  
-  // 이전에 검색 결과가 있었지만 현재 결과가 없는 경우 (새로고침으로 인한 결과 초기화)
-  if (hasSearched && query && !results) {
-    // 로딩 상태 즉시 설정 (새로고침 직후 UI 깜빡임 방지)
-    setLoading(true);
-    
-    // 캐시된 결과 확인 - 즉시 복원 (딜레이 제거)
-    const cachedResult = getCachedResults(query, currentPage);
-    if (cachedResult) {
-      setResults(cachedResult);
-      console.log(`새로고침 후 '${query}' 검색 결과 즉시 복원 (페이지 ${currentPage})`);
+  const {
+    query,
+    currentPage,
+    hasSearched,
+    results,
+    getCachedResults,
+    setResults,
+    setLoading,
+    clearSearchQuery,
+  } = useSearchStore.getState();
+
+  const currentPath = window.location.pathname;
+
+  // 메인 페이지에서는 쿼리를 초기화
+  if (currentPath === '/') {
+    clearSearchQuery();
+  }
+  // 검색 페이지에서만 마지막 결과 복원
+  else if (currentPath.includes('/search')) {
+    // 이전에 검색 결과가 있었지만 현재 결과가 없는 경우 (새로고침으로 인한 결과 초기화)
+    if (hasSearched && query && !results) {
+      // 로딩 상태 즉시 설정 (새로고침 직후 UI 깜빡임 방지)
+      setLoading(true);
+
+      // 캐시된 결과 확인 - 즉시 복원 (딜레이 제거)
+      const cachedResult = getCachedResults(query, currentPage);
+      if (cachedResult) {
+        setResults(cachedResult);
+        console.log(`새로고침 후 '${query}' 검색 결과 즉시 복원 (페이지 ${currentPage})`);
+      }
+      setLoading(false);
     }
-    setLoading(false);
   }
 }
