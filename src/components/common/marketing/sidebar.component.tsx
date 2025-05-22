@@ -62,11 +62,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ className = '' }) => {
 
     return () => {
       window.removeEventListener('resize', handleResize);
-      // 참조를 복사하여 클로저 문제 방지
-      const currentAnimation = animationRef.current;
-      // 복사된 값으로 정리
-      if (currentAnimation !== null) {
-        cancelAnimationFrame(currentAnimation);
+      // 변수에 현재 animationRef.current를 저장하여 클로저 문제 방지
+      const currentAnimationRef = animationRef.current;
+      if (currentAnimationRef !== null) {
+        cancelAnimationFrame(currentAnimationRef);
       }
     };
   }, [searchUIStore.searchBarMode, searchUIStore.stickyOpacity, searchUIStore.setSidebarPosition]);

@@ -1,20 +1,23 @@
-"use client";
+'use client';
 
-import React from "react";
-import Link from "next/link";
-import { useSearchStore } from "@/store/search.store";
-import { MenuButton } from "./menu-button.component";
+import React from 'react';
+import Link from 'next/link';
+import { useSearchStore } from '@/store/search.store';
+import { MenuButton } from './menu-button.component';
 
 export const Header: React.FC = () => {
-  const { clearSearchQuery } = useSearchStore();
+  const { resetSearch } = useSearchStore();
 
   const handleHomeClick = () => {
     // 검색어 초기화
-    clearSearchQuery();
+    resetSearch();
   };
 
   return (
-    <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+    <header
+      className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700"
+      style={{ borderColor: '#e5e7eb' }}
+    >
       <div className="container mx-auto px-4 py-4">
         <div className="flex justify-between items-center">
           <Link
