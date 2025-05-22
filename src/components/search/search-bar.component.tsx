@@ -19,7 +19,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
 }) => {
   const router = useRouter();
   const pathname = usePathname();
-  const { query, setQuery, handleSearch, isLoading } = useSearch();
+  const { query, setQuery, handleSearch, isLoading, resetSearch } = useSearch();
   const formRef = useRef<HTMLFormElement>(null);
   const searchBarRef = useRef<HTMLDivElement>(null);
   const [isSticky, setIsSticky] = useState(false);
@@ -29,23 +29,39 @@ export const SearchBar: React.FC<SearchBarProps> = ({
   // initialQuery가 적용되었는지 추적하는 ref
   const initialQueryApplied = useRef(false);
 
+  // 메인 페이지에서는 모든 검색 상태를 초기화
+  useEffect(() => {
+    if (centered && pathname === '/') {
+      resetSearch();
+      console.log('메인 페이지 SearchBar 마운트: 검색 상태 초기화');
+    }
+  }, [centered, pathname, resetSearch]);
+
   // initialQuery가 제공되면 쿼리 상태 초기화 (처음 한 번만)
   useEffect(() => {
-    // 메인 페이지에서만 초기 쿼리를 설정하고, 검색 페이지에서는 URL의 쿼리를 사용
-    if (initialQuery && !initialQueryApplied.current) {
+    // 메인 페이지(centered=true)에서는 초기 쿼리를 설정하지 않음
+    // 검색 페이지에서만 URL의 쿼리를 사용
+    if (initialQuery && !initialQueryApplied.current && !centered) {
       setQuery(initialQuery);
       initialQueryApplied.current = true;
     }
-  }, [initialQuery, setQuery]);
+  }, [initialQuery, setQuery, centered]);
 
   // 스크롤 위치에 따라 검색바 위치 조정
   useEffect(() => {
     if (!pathname.includes('/search') || !searchBarRef.current) return;
 
-    // 초기 상태 설정
-    setIsSticky(false);
-    setOpacity(1);
-    searchUIStore.setSearchBarMode('origin');
+    // 초기 상태 설정 (첫 렌더링 시에만)
+    const isSearchPath = pathname.includes('/search');
+    if (isSearchPath) {
+      setIsSticky(false);
+      setOpacity(1);
+
+      // 메서드만 사용하고 직접 의존성에 추가하지 않음
+      if (searchUIStore.searchBarMode !== 'origin') {
+        searchUIStore.setSearchBarMode('origin');
+      }
+    }
 
     // 스크롤을 통한 사이드바 노출 관련 상수
     const START_FADE_OFFSET = 0; // 스크롤 즉시 시작
@@ -93,12 +109,17 @@ export const SearchBar: React.FC<SearchBarProps> = ({
       window.removeEventListener('scroll', checkScroll);
       searchUIStore.setSearchBarMode('origin');
     };
-  }, [pathname, searchUIStore.setSearchBarMode, searchUIStore.setStickyOpacity]);
+  }, [
+    pathname,
+    searchUIStore.setSearchBarMode,
+    searchUIStore.setStickyOpacity,
+    searchUIStore.setTransition,
+  ]);
 
   const onSubmit = (e: FormEvent) => {
     e.preventDefault();
 
-    if (query) {
+    if (query && query.trim().length >= 2) {
       // 이미 검색 페이지에 있는지 확인
       const isOnSearchPage = pathname.includes('/search');
 
@@ -111,6 +132,8 @@ export const SearchBar: React.FC<SearchBarProps> = ({
         // 검색 페이지의 useEffect에서 검색이 실행될 것임
         router.push(`/search?q=${encodeURIComponent(query)}&page=1`);
       }
+    } else if (query.trim().length > 0) {
+      console.log('검색어를 입력해주세요.');
     }
   };
 
