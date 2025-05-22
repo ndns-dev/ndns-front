@@ -14,14 +14,19 @@ export default function SearchPage() {
   const pageParam = parseInt(searchParams.get('page') || '1', 10);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const { results, error, currentPage, handleSearch, query } = useSearch();
+  const { results, error, currentPage, handleSearch, query, isFromNavigation } = useSearch();
 
   // 컴포넌트 마운트 시 URL에서 쿼리 파라미터 가져와서 검색
   useEffect(() => {
     // URL 쿼리가 있는 경우에만 처리
-    if (queryParam) {
-      // 현재 쿼리와 URL 쿼리가 다르거나 결과가 없는 경우 검색 수행
-      if (queryParam !== query || !results) {
+    if (queryParam && queryParam.trim().length >= 2) {
+      // 네비게이션에서 온 경우는 handleSearch에서 특별히 처리
+      if (isFromNavigation) {
+        console.log(`메인 페이지에서 검색 이동: ${queryParam}`);
+        handleSearch(queryParam, pageParam);
+      }
+      // 새로고침이나 직접 URL 입력의 경우: 현재 쿼리와 URL 쿼리가 다르거나 결과가 없는 경우에만 검색
+      else if (queryParam !== query || !results) {
         console.log(`URL 파라미터로 새 검색 실행: ${queryParam}, 페이지: ${pageParam}`);
         handleSearch(queryParam, pageParam);
       }
@@ -30,9 +35,11 @@ export default function SearchPage() {
         console.log(`URL 페이지 파라미터로 페이지 변경: ${pageParam}`);
         handleSearch(query, pageParam);
       }
+    } else if (queryParam.trim().length > 0 && queryParam.trim().length < 2) {
+      console.log('URL 검색어가 2글자 미만입니다. 검색을 실행하지 않습니다.');
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [queryParam, pageParam]); // 의존성 배열은 간소화
+  }, [queryParam, pageParam, isFromNavigation]); // isFromNavigation 의존성 추가
 
   // 페이지 변경 핸들러
   const handlePageChange = (page: number) => {
