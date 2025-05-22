@@ -35,11 +35,8 @@ export default function SearchPage() {
         console.log(`URL 페이지 파라미터로 페이지 변경: ${pageParam}`);
         handleSearch(query, pageParam);
       }
-    } else if (queryParam.trim().length > 0 && queryParam.trim().length < 2) {
-      console.log('URL 검색어가 2글자 미만입니다. 검색을 실행하지 않습니다.');
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [queryParam, pageParam, isFromNavigation]); // isFromNavigation 의존성 추가
+  }, [queryParam, pageParam, isFromNavigation]);
 
   // 페이지 변경 핸들러
   const handlePageChange = (page: number) => {

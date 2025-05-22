@@ -49,7 +49,7 @@ export const SearchForm: React.FC<SearchFormProps> = ({
             'absolute right-2 top-1/2 transform -translate-y-1/2 rounded-full bg-transparent hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors',
             buttonClasses
           )}
-          disabled={isLoading}
+          disabled={isLoading || !query.trim()}
         >
           {isLoading ? (
             <Loader2 className={cn(iconSize, 'animate-spin text-emerald-500')} />

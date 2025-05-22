@@ -91,15 +91,9 @@ export const useSearch = () => {
   const handleSearch = async (searchQuery?: string, page: number = 1) => {
     const currentQuery = searchQuery !== undefined ? searchQuery : query;
 
-    // 검색어가 없거나 2글자 미만이면 검색하지 않음
+    // 검색어가 없으면 검색하지 않음
     if (!currentQuery.trim()) {
       setError('검색어를 입력해주세요.');
-      return;
-    }
-
-    if (currentQuery.trim().length < 2) {
-      setError('검색어는 최소 2글자 이상 입력해주세요.');
-      console.log('검색어는 최소 2글자 이상 입력해주세요.');
       return;
     }
 
