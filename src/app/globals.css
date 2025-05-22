@@ -1,4 +1,4 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 
 @layer base {
   :root {
@@ -52,13 +52,72 @@
     @apply border-neutral-200 dark:border-neutral-800;
   }
   body {
-    @apply bg-white text-gray-900 dark:bg-gray-900 dark:text-gray-100;
+    @apply bg-gray-50 text-gray-900 dark:bg-gray-900 dark:text-gray-100;
   }
 }
 
 /* 기본 배경색 및 텍스트 색상 */
 .bg-white {
-  background-color: white;
+  background-color: white !important;
+}
+
+.bg-gray-50 {
+  background-color: #f9fafb !important;
+}
+
+.bg-gray-100 {
+  background-color: #f3f4f6 !important;
+}
+
+.bg-gray-200 {
+  background-color: #e5e7eb !important;
+}
+
+.bg-gray-300 {
+  background-color: #d1d5db !important;
+}
+
+.bg-gray-700 {
+  background-color: #374151 !important;
+}
+
+.bg-gray-800 {
+  background-color: #1f2937 !important;
+}
+
+.bg-gray-900 {
+  background-color: #111827 !important;
+}
+
+/* 테두리 색상 일관성 */
+.border-gray-200 {
+  border-color: #e5e7eb !important;
+}
+
+.border-gray-300 {
+  border-color: #d1d5db !important;
+}
+
+/* 텍스트 색상 일관성 */
+.text-gray-700 {
+  color: #374151 !important;
+}
+
+.text-gray-800 {
+  color: #1f2937 !important;
+}
+
+.text-gray-900 {
+  color: #111827 !important;
+}
+
+/* 입력 필드 스타일 */
+input {
+  color: #1f2937 !important;
+}
+
+input.rounded-full {
+  color: #1f2937 !important;
 }
 
 /* 트랜지션 효과 */
@@ -99,6 +158,12 @@
 
 .dark .bg-gray-800 {
   background-color: #262626 !important;
+}
+
+.dark input.rounded-full {
+  background-color: #262626 !important;
+  color: #ffffff !important;
+  border-color: #404040 !important;
 }
 
 .dark .text-gray-600 {
