@@ -3,11 +3,6 @@ export interface SponsorIndicator {
   pattern: string;
   matchedText: string;
   source: string;
-  source_info: {
-    image_url?: string;
-    detection_method?: string;
-    text?: string;
-  };
 }
 
 export interface SearchResultPost {
