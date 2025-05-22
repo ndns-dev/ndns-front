@@ -34,10 +34,16 @@ export interface SearchApiResponse {
 // 캐시된 검색 결과 타입
 export interface CachedResults {
   [key: string]: {
-    apiResponse: SearchApiResponse;
-    timestamp: number;
+    keywordData: {
+      totalResults: number;
+      itemsPerPage: number;
+      timestamp: number;
+    };
     pageData: {
-      [page: number]: SearchResultPost[];
+      [page: number]: {
+        sponsoredResults: number;
+        posts: SearchResultPost[];
+      };
     };
   };
 }
@@ -51,6 +57,7 @@ export interface SearchState {
   cachedResults: CachedResults;
   pendingFetches: Map<number, Promise<SearchApiResponse>>;
   currentPage: number;
+  isFromMainNavigation: boolean;
 
   // 액션들
   setQuery: (query: string) => void;
@@ -63,5 +70,5 @@ export interface SearchState {
   removePendingFetch: (page: number) => void;
   getPendingFetch: (page: number) => Promise<SearchApiResponse> | undefined;
   setCurrentPage: (page: number) => void;
-  clearSearchQuery: () => void;
+  setFromMainNavigation: (value: boolean) => void;
 }

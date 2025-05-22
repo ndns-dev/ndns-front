@@ -1,6 +1,6 @@
-import { useEffect } from "react";
-import { useSearchStore } from "@/store/search.store";
-import { searchApi } from "@/apis/search.api";
+import { useEffect, useState } from 'react';
+import { useSearchStore } from '@/store/search.store';
+import { searchApi } from '@/apis/search.api';
 
 // 기본 페이지당 항목 수 (API 요청 및 UI에 표시할 항목 수)
 const itemsPerPage = 10;
@@ -25,12 +25,38 @@ export const useSearch = () => {
     removePendingFetch,
     getPendingFetch,
     setCurrentPage,
+    isFromMainNavigation,
+    setFromMainNavigation,
   } = useSearchStore();
+
+  // 네비게이션에서 온 검색인지 확인하는 상태
+  const [isFromNavigation, setIsFromNavigation] = useState<boolean>(isFromMainNavigation);
+
+  // 컴포넌트 마운트 시 확인
+  useEffect(() => {
+    // 브라우저 환경에서만 실행
+    if (typeof window !== 'undefined') {
+      // referrer가 있고 같은 도메인이면서 /search가 아니면 네비게이션에서 온 것
+      const referrer = document.referrer;
+      const currentHost = window.location.host;
+      const isFromMainPage = referrer.includes(currentHost) && !referrer.includes('/search');
+
+      setIsFromNavigation(isFromMainPage);
+      setFromMainNavigation(isFromMainPage); // 스토어 상태도 업데이트
+      console.log('네비게이션에서 검색 페이지로 이동:', isFromMainPage);
+    }
+  }, [setFromMainNavigation]);
 
   // 컴포넌트 마운트 시 캐시된 결과 복원
   useEffect(() => {
     // 컴포넌트 마운트 시 한 번만 실행되어야 함
     const restoreCachedResults = () => {
+      // 메인 페이지에서 넘어온 경우 캐시를 복원하지 않음
+      if (isFromNavigation) {
+        console.log('메인 페이지에서 이동: 캐시 복원 건너뜀');
+        return;
+      }
+
       // 이전에 검색했던 기록이 있는 경우
       if (hasSearched && query) {
         // 이미 결과가 있는 경우 스킵 (이미 스토어에서 초기화된 경우)
@@ -41,7 +67,6 @@ export const useSearch = () => {
         // 로딩 상태 설정 (스토어에서 설정되지 않았을 경우를 대비)
         if (!isLoading) {
           setLoading(true);
-          console.log("컴포넌트 마운트 시 로딩 상태 설정");
         }
 
         // 캐시된 결과 확인
@@ -51,9 +76,6 @@ export const useSearch = () => {
           setTimeout(() => {
             setResults(cachedResult);
             setLoading(false);
-            console.log(
-              `컴포넌트 마운트 시 '${query}' 검색 결과 복원 (페이지 ${currentPage})`
-            );
           }, 500); // 500ms 딜레이
         } else {
           setLoading(false);
@@ -63,27 +85,58 @@ export const useSearch = () => {
 
     restoreCachedResults();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [isFromNavigation]); // isFromNavigation이 바뀔 때도 실행
 
   // 검색 처리 함수
   const handleSearch = async (searchQuery?: string, page: number = 1) => {
     const currentQuery = searchQuery !== undefined ? searchQuery : query;
 
+    // 검색어가 없거나 2글자 미만이면 검색하지 않음
     if (!currentQuery.trim()) {
-      setError("검색어를 입력해주세요.");
+      setError('검색어를 입력해주세요.');
+      return;
+    }
+
+    if (currentQuery.trim().length < 2) {
+      setError('검색어는 최소 2글자 이상 입력해주세요.');
+      console.log('검색어는 최소 2글자 이상 입력해주세요.');
+      return;
+    }
+
+    // 메인 페이지에서 넘어온 경우 로딩 상태만 보여주고 이전 결과는 숨김
+    if (isFromNavigation && searchQuery) {
+      console.log('메인 페이지에서 이동한 검색: 캐시를 사용하지 않고 새로 검색합니다');
+      // 로딩 상태 설정
+      setLoading(true);
+      setError(null);
+      setQuery(currentQuery);
+
+      try {
+        // API 호출
+        console.log(`'${currentQuery}' 새로 검색 중... (페이지 ${page}, ${itemsPerPage}개 항목)`);
+        const searchResults = await searchApi.searchBlogs({
+          query: currentQuery,
+          offset: (page - 1) * itemsPerPage,
+          limit: itemsPerPage,
+        });
+
+        // 결과 저장
+        setResults(searchResults);
+        setCurrentPage(page);
+
+        // 다음 페이지 프리페치 (백그라운드)
+        prefetchNextPage(currentQuery, page);
+      } catch (err) {
+        setLoading(false);
+        setError('검색 중 오류가 발생했습니다. 다시 시도해주세요.');
+        console.error('검색 오류:', err);
+      }
       return;
     }
 
     // 이미 같은 쿼리로 같은 페이지를 보고 있는 경우 중복 호출 방지
-    if (
-      results &&
-      results.keyword === currentQuery &&
-      results.page === page &&
-      !isLoading
-    ) {
-      console.log(
-        `이미 '${currentQuery}' 페이지 ${page}를 보고 있습니다. 중복 호출 방지.`
-      );
+    if (results && results.keyword === currentQuery && results.page === page && !isLoading) {
+      console.log(`이미 '${currentQuery}' 페이지 ${page}를 보고 있습니다. 중복 호출 방지.`);
       return;
     }
 
@@ -104,9 +157,7 @@ export const useSearch = () => {
       // 진행 중인 프리페치 요청이 있는지 확인
       const pendingPromise = getPendingFetch(page);
       if (pendingPromise) {
-        console.log(
-          `페이지 ${page}에 대한 프리페치가 진행 중입니다. 기다리는 중...`
-        );
+        console.log(`페이지 ${page}에 대한 프리페치가 진행 중입니다. 기다리는 중...`);
 
         try {
           // 로딩 상태 설정
@@ -124,7 +175,7 @@ export const useSearch = () => {
           return;
         } catch (err) {
           // 프리페치 요청이 실패한 경우, 일반 API 호출로 진행
-          console.error("프리페치 요청 대기 중 오류 발생:", err);
+          console.error('프리페치 요청 대기 중 오류 발생:', err);
           // 아래의 일반 API 호출 로직으로 진행됨
         }
       }
@@ -140,9 +191,7 @@ export const useSearch = () => {
       }
 
       // API 호출
-      console.log(
-        `'${currentQuery}' 검색 중... (페이지 ${page}, ${itemsPerPage}개 항목)`
-      );
+      console.log(`'${currentQuery}' 검색 중... (페이지 ${page}, ${itemsPerPage}개 항목)`);
       const searchResults = await searchApi.searchBlogs({
         query: currentQuery,
         offset: (page - 1) * itemsPerPage,
@@ -156,8 +205,8 @@ export const useSearch = () => {
       prefetchNextPage(currentQuery, page);
     } catch (err) {
       setLoading(false);
-      setError("검색 중 오류가 발생했습니다. 다시 시도해주세요.");
-      console.error("검색 오류:", err);
+      setError('검색 중 오류가 발생했습니다. 다시 시도해주세요.');
+      console.error('검색 오류:', err);
     }
   };
 
@@ -199,19 +248,35 @@ export const useSearch = () => {
             // 직접 캐시에 저장하지만 화면은 업데이트하지 않음
             const { cachedResults } = useSearchStore.getState();
             const cacheKey = queryText.toLowerCase().trim();
-            const pageData = { ...(cachedResults[cacheKey]?.pageData || {}) };
 
-            // 현재 페이지의 결과를 캐시에 저장
-            pageData[page] = nextPageData.posts;
+            // 기존 캐시 확인
+            const existingCache = cachedResults[cacheKey] || {
+              keywordData: {
+                totalResults: nextPageData.totalResults,
+                itemsPerPage: nextPageData.itemsPerPage,
+                timestamp: Date.now(),
+              },
+              pageData: {},
+            };
+
+            // 새 페이지 데이터 추가
+            const updatedPageData = { ...existingCache.pageData };
+            updatedPageData[page] = {
+              sponsoredResults: nextPageData.sponsoredResults,
+              posts: nextPageData.posts,
+            };
 
             // 캐시 업데이트 (setResults 대신 상태만 직접 업데이트)
             useSearchStore.setState({
               cachedResults: {
                 ...cachedResults,
                 [cacheKey]: {
-                  apiResponse: nextPageData,
-                  timestamp: Date.now(),
-                  pageData,
+                  keywordData: {
+                    ...existingCache.keywordData,
+                    totalResults: nextPageData.totalResults, // 총 결과수 업데이트
+                    timestamp: Date.now(),
+                  },
+                  pageData: updatedPageData,
                 },
               },
             });
@@ -228,7 +293,7 @@ export const useSearch = () => {
         setPendingFetch(nextPage, promise);
 
         // 이 값은 사용하지 않지만, promise를 실행시키기 위해 필요함
-        promise.catch((error) => {
+        promise.catch(error => {
           console.error(`페이지 ${nextPage} 프리페치 실패:`, error);
           removePendingFetch(nextPage);
         });
@@ -253,5 +318,6 @@ export const useSearch = () => {
     handleSearch,
     resetSearch,
     setCurrentPage,
+    isFromNavigation,
   };
 };
