@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import React from "react";
-import { useThemeStore } from "@/store/theme.store";
-import { Button } from "@/components/ui";
-import { Sun, Moon } from "lucide-react";
+import React from 'react';
+import { useThemeStore } from '@/store/theme.store';
+import { Button } from '@/components/ui';
+import { Sun, Moon } from 'lucide-react';
 
 export const ThemeToggle: React.FC = () => {
   const { isDarkMode, toggleTheme } = useThemeStore();
@@ -13,7 +13,7 @@ export const ThemeToggle: React.FC = () => {
       onClick={toggleTheme}
       variant="outline"
       size="icon"
-      className="fixed bottom-5 right-5 z-50 bg-white dark:bg-gray-800 p-3 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 focus:outline-none h-12 w-12"
+      className="fixed bottom-5 right-5 z-50 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-3 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 focus:outline-none h-12 w-12"
       aria-label="테마 변경"
     >
       {isDarkMode ? (

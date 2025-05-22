@@ -2,10 +2,7 @@ import React, { FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import { usePathname } from 'next/navigation';
 import { useSearch } from '@/hooks/use-search.hook';
-import { Input, Button } from '@/components/ui';
-import { Loader2, Search } from 'lucide-react';
 import { cn } from '@/utils/class-name.util';
-import { useThemeStore } from '@/store/theme.store';
 import { SearchForm } from './search-form.component';
 
 interface StickySearchBarProps {
@@ -22,7 +19,6 @@ export const StickySearchBar: React.FC<StickySearchBarProps> = ({
   const router = useRouter();
   const pathname = usePathname();
   const { query, setQuery, handleSearch, isLoading } = useSearch();
-  const { isDarkMode } = useThemeStore();
 
   // 폼 제출 처리
   const onSubmit = (e: FormEvent) => {

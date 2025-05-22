@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import Link from "next/link";
-import { Menu } from "lucide-react";
-import { Button } from "@/components/ui";
+import { useState } from 'react';
+import Link from 'next/link';
+import { Menu } from 'lucide-react';
+import { Button } from '@/components/ui';
 
 export const MenuButton = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -14,7 +14,7 @@ export const MenuButton = () => {
         onClick={() => setIsOpen(!isOpen)}
         variant="ghost"
         size="icon"
-        className="flex items-center text-gray-700 dark:text-gray-300 hover:text-emerald-500 dark:hover:text-emerald-400 transition-colors p-0 h-auto w-auto"
+        className="flex items-center text-gray-800 dark:text-gray-300 hover:text-emerald-500 dark:hover:text-emerald-400 transition-colors p-0 h-auto w-auto"
       >
         <Menu className="h-6 w-6" />
       </Button>
