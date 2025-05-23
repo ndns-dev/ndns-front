@@ -1,9 +1,9 @@
-import { env } from "@/config/env.schema";
+import { env } from '@/config/env.schema';
 
 /**
  * API 요청에 사용할 기본 URL
  */
-export const API_BASE_URL = "/api/v1";
+export const API_BASE_URL = '/api/v1';
 
 /**
  * 기본 API 클라이언트 구현
@@ -46,7 +46,7 @@ class ApiClient {
     isDebouncing: false,
     debounceTimer: null,
   };
-  
+
   // 레이트 리미팅 설정
   private rateLimit = {
     maxRequests: 10, // 최대 요청 횟수
@@ -65,7 +65,7 @@ class ApiClient {
   private checkRateLimit(): Promise<void> {
     return new Promise((resolve, reject) => {
       const now = Date.now();
-      
+
       // 시간 윈도우 외의 오래된 요청 제거
       this.rateLimitState.requestTimes = this.rateLimitState.requestTimes.filter(
         time => now - time < this.rateLimit.timeWindow
@@ -75,8 +75,14 @@ class ApiClient {
       if (this.rateLimitState.requestTimes.length >= this.rateLimit.maxRequests) {
         const oldestRequest = this.rateLimitState.requestTimes[0];
         const timeToWait = this.rateLimit.timeWindow - (now - oldestRequest);
-        
-        reject(new Error(`너무 많은 요청이 발생했습니다. ${Math.ceil(timeToWait / 1000)}초 후에 다시 시도해주세요.`));
+
+        reject(
+          new Error(
+            `너무 많은 요청이 발생했습니다. ${Math.ceil(
+              timeToWait / 1000
+            )}초 후에 다시 시도해주세요.`
+          )
+        );
         return;
       }
 
@@ -85,7 +91,7 @@ class ApiClient {
         if (this.rateLimitState.debounceTimer) {
           clearTimeout(this.rateLimitState.debounceTimer);
         }
-        
+
         this.rateLimitState.debounceTimer = setTimeout(() => {
           this.rateLimitState.isDebouncing = false;
           this.rateLimitState.requestTimes.push(Date.now());
@@ -94,7 +100,7 @@ class ApiClient {
       } else {
         // 디바운싱 상태 설정
         this.rateLimitState.isDebouncing = true;
-        
+
         // 짧은 지연 후 요청 허용
         setTimeout(() => {
           this.rateLimitState.isDebouncing = false;
@@ -111,10 +117,7 @@ class ApiClient {
    * @param options 요청 옵션
    * @returns 응답 데이터
    */
-  private async request<T = unknown>(
-    path: string,
-    options: ApiRequestOptions = {}
-  ): Promise<T> {
+  private async request<T = unknown>(path: string, options: ApiRequestOptions = {}): Promise<T> {
     // 레이트 리미팅 적용 (특별히 skip 옵션이 없는 경우)
     if (!options.skipRateLimiting) {
       try {
@@ -138,8 +141,9 @@ class ApiClient {
         ...options,
         signal,
         headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+          'ngrok-skip-browser-warning': 'true',
           ...options.headers,
         },
       });
@@ -158,8 +162,8 @@ class ApiClient {
       // JSON 응답 파싱
       return response.json() as Promise<T>;
     } catch (error) {
-      if (error instanceof Error && error.name === "AbortError") {
-        throw new Error("요청 시간이 초과되었습니다.");
+      if (error instanceof Error && error.name === 'AbortError') {
+        throw new Error('요청 시간이 초과되었습니다.');
       }
       throw error;
     }
@@ -193,9 +197,7 @@ class ApiClient {
    * @returns 에러 객체
    */
   private handleRequestError(response: Response): ApiError {
-    const error: ApiError = new Error(
-      `${response.status} ${response.statusText}`
-    );
+    const error: ApiError = new Error(`${response.status} ${response.statusText}`);
     error.statusCode = response.status;
 
     return error;
@@ -207,13 +209,10 @@ class ApiClient {
    * @param options 요청 옵션
    * @returns 응답 데이터
    */
-  public async get<T = unknown>(
-    path: string,
-    options: ApiRequestOptions = {}
-  ): Promise<T> {
+  public async get<T = unknown>(path: string, options: ApiRequestOptions = {}): Promise<T> {
     return this.request<T>(path, {
       ...options,
-      method: "GET",
+      method: 'GET',
     });
   }
 
@@ -231,7 +230,7 @@ class ApiClient {
   ): Promise<T> {
     return this.request<T>(path, {
       ...options,
-      method: "POST",
+      method: 'POST',
       body: body ? JSON.stringify(body) : undefined,
     });
   }
@@ -250,7 +249,7 @@ class ApiClient {
   ): Promise<T> {
     return this.request<T>(path, {
       ...options,
-      method: "PUT",
+      method: 'PUT',
       body: body ? JSON.stringify(body) : undefined,
     });
   }
@@ -261,13 +260,10 @@ class ApiClient {
    * @param options 요청 옵션
    * @returns 응답 데이터
    */
-  public async delete<T = unknown>(
-    path: string,
-    options: ApiRequestOptions = {}
-  ): Promise<T> {
+  public async delete<T = unknown>(path: string, options: ApiRequestOptions = {}): Promise<T> {
     return this.request<T>(path, {
       ...options,
-      method: "DELETE",
+      method: 'DELETE',
     });
   }
 }
