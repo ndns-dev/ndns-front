@@ -4,6 +4,7 @@ import './globals.css';
 import { ThemeProvider } from '@/components/common/theme';
 import { ThemeToggle } from '@/components/common/theme';
 import { StateLoader } from '@/components/common/feedback';
+import { ScrollToTop } from '@/components/common/scroll/scroll-to-top.component';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -23,6 +24,7 @@ export default function RootLayout({
         <ThemeProvider>
           <StateLoader>{children}</StateLoader>
           <ThemeToggle />
+          <ScrollToTop />
         </ThemeProvider>
       </body>
     </html>
