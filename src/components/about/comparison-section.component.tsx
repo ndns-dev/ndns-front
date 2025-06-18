@@ -30,16 +30,15 @@ export const ComparisonSection: React.FC<ComparisonSectionProps> = ({ type }) =>
     : [
         {
           title: '신뢰성 있는 후기',
-          description: '내돈내산에서 분석하여 실제 사용자의 솔직한 후기를 분류해드립니다',
+          description: 'AI를 통해 분석하여 보다 정교하게 실제 사용자의 솔직한 후기를 분류',
         },
         {
           title: '시간 절약',
-          description: '협찬 여부를 바로 확인하여 시간을 절약할 수 있습니다',
+          description: '협찬 여부를 바로 확인하여 시간 절약',
         },
         {
           title: '현명한 소비 결정',
-          description:
-            '협찬을 걸러내고 사용자의 솔직한 후기를 확인하여 더 나은 구매 결정을 할 수 있습니다',
+          description: '협찬을 걸러내고 사용자의 솔직한 후기를 확인하여 더 나은 구매 결정 가능',
         },
       ];
 
