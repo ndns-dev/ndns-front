@@ -15,7 +15,7 @@ export const SearchChipsSection: React.FC<SearchChipsSectionProps> = ({
   onRefresh,
 }) => {
   return (
-    <div className="bg-gray-50 dark:bg-gray-800 rounded-lg shadow-md p-8 relative comparison-card">
+    <div className="bg-gray-50 dark:bg-gray-900 rounded-lg shadow-md p-8 relative comparison-card">
       <div className="absolute top-4 right-4 text-blue-400">
         <Search size={24} />
       </div>
@@ -51,8 +51,7 @@ export const SearchChipsSection: React.FC<SearchChipsSectionProps> = ({
           </div>
         </div>
 
-        {/* 오버플로우 표시 그라데이션 */}
-        <div className="absolute bottom-0 left-0 right-0 h-4 bg-gradient-to-t from-gray-50 to-transparent dark:from-gray-800 dark:to-transparent pointer-events-none"></div>
+        <div className="absolute bottom-0 left-0 right-0 h-4 pointer-events-none"></div>
       </div>
     </div>
   );

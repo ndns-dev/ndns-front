@@ -18,7 +18,7 @@ export default function AboutPage() {
     <div className="flex flex-col min-h-screen">
       <Header />
 
-      <main className="flex-grow flex flex-col items-center px-4 py-12">
+      <main className="flex-grow flex flex-col items-center px-4 py-12 bg-white dark:bg-gray-900">
         <div className="w-full max-w-6xl mx-auto">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
             {/* 기존 검색 방식 섹션 */}

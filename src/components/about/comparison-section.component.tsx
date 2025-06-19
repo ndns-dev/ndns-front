@@ -43,7 +43,7 @@ export const ComparisonSection: React.FC<ComparisonSectionProps> = ({ type }) =>
       ];
 
   return (
-    <div className="bg-gray-50 dark:bg-gray-800 rounded-lg shadow-md p-8 relative comparison-card">
+    <div className="bg-gray-50 dark:bg-gray-900 rounded-lg shadow-md p-8 relative comparison-card">
       <div
         className={`absolute top-4 right-4 ${isTraditional ? 'text-red-400' : 'text-emerald-400'}`}
       >
