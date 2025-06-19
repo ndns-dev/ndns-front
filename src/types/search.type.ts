@@ -9,8 +9,8 @@ export interface SearchResultPost {
   title: string;
   link: string;
   description: string;
-  bloggername: string;
-  bloggerlink: string;
+  bloggerName: string;
+  bloggerLink: string;
   postDate: string;
   isSponsored: boolean;
   sponsorProbability: number;
@@ -19,51 +19,63 @@ export interface SearchResultPost {
 
 export interface SearchApiResponse {
   keyword: string;
+  posts: SearchResultPost[];
   totalResults: number;
+  itemsPerPage: number;
   sponsoredResults: number;
   page: number;
-  itemsPerPage: number;
-  posts: SearchResultPost[];
+  isPartialResult?: boolean;
+  isInitialLoad?: boolean;
+  currentCount?: number;
 }
 
-// 캐시된 검색 결과 타입
+export interface CachedKeywordData {
+  totalResults: number;
+  itemsPerPage: number;
+  sponsoredResults: number;
+  timestamp: number;
+}
+
+export interface CachedPageData {
+  posts: SearchResultPost[];
+  currentCount: number;
+  isComplete: boolean;
+}
+
 export interface CachedResults {
-  [key: string]: {
-    keywordData: {
-      totalResults: number;
-      itemsPerPage: number;
-      timestamp: number;
-    };
+  [query: string]: {
+    keywordData: CachedKeywordData;
     pageData: {
-      [page: number]: {
-        sponsoredResults: number;
-        posts: SearchResultPost[];
-      };
+      [page: number]: CachedPageData;
     };
   };
 }
 
-export interface SearchState {
+export interface SearchStateData {
   query: string;
   results: SearchApiResponse | null;
-  isLoading: boolean;
   error: string | null;
-  hasSearched: boolean;
-  cachedResults: CachedResults;
-  pendingFetches: Map<number, Promise<SearchApiResponse>>;
+  isLoading: boolean;
+  isSearchBarLoading: boolean;
+  isModalLoading: boolean;
+  isCardLoading: boolean;
   currentPage: number;
+  cachedResults: CachedResults;
   isFromMainNavigation: boolean;
-
-  // 액션들
-  setQuery: (query: string) => void;
-  setLoading: (isLoading: boolean) => void;
-  setError: (error: string | null) => void;
-  setResults: (results: SearchApiResponse) => void;
-  getCachedResults: (query: string, page: number) => SearchApiResponse | null;
-  resetSearch: () => void;
-  setPendingFetch: (page: number, promise: Promise<SearchApiResponse>) => void;
-  removePendingFetch: (page: number) => void;
-  getPendingFetch: (page: number) => Promise<SearchApiResponse> | undefined;
-  setCurrentPage: (page: number) => void;
-  setFromMainNavigation: (value: boolean) => void;
 }
+
+export interface SearchStateActions {
+  setQuery: (query: string) => void;
+  setResults: (results: SearchApiResponse | null) => void;
+  setError: (error: string | null) => void;
+  setIsLoading: (isLoading: boolean) => void;
+  setIsSearchBarLoading: (isLoading: boolean) => void;
+  setIsModalLoading: (isLoading: boolean) => void;
+  setIsCardLoading: (isLoading: boolean) => void;
+  setCurrentPage: (page: number) => void;
+  setCachedResults: (results: CachedResults | ((prev: CachedResults) => CachedResults)) => void;
+  resetSearch: () => void;
+  setIsFromMainNavigation: (isFromMainNavigation: boolean) => void;
+}
+
+export type SearchState = SearchStateData & SearchStateActions;
