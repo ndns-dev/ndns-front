@@ -1,177 +1,158 @@
 import { create } from 'zustand';
-import { persist, createJSONStorage } from 'zustand/middleware';
-import { SearchApiResponse, CachedResults, SearchState } from '@/types/search.type';
+import { SearchApiResponse, CachedResults } from '@/types/search.type';
 
-export const useSearchStore = create<SearchState>()(
-  persist(
-    (set, get) => ({
-      query: '',
-      results: null,
-      isLoading: false,
-      error: null,
-      hasSearched: false,
-      cachedResults: {} as CachedResults,
-      pendingFetches: new Map(),
-      currentPage: 1,
-      isFromMainNavigation: false,
+interface SearchState {
+  query: string;
+  currentPage: number;
+  results: SearchApiResponse | null;
+  error: string | null;
+  isLoading: boolean;
+  isSearchBarLoading: boolean;
+  isModalLoading: boolean;
+  isCardLoading: boolean;
+  isFromMainNavigation: boolean;
+  hasSearched: boolean;
+  cachedResults: CachedResults;
+}
 
-      setQuery: (query: string) => set({ query }),
-      setLoading: (isLoading: boolean) => set({ isLoading }),
-      setError: (error: string | null) => set({ error }),
-      setResults: (results: SearchApiResponse) => {
-        const { query, cachedResults } = get();
-        const cacheKey = query.toLowerCase().trim();
+interface SearchActions {
+  setQuery: (query: string) => void;
+  setResults: (results: SearchApiResponse | null) => void;
+  setError: (error: string | null) => void;
+  setIsLoading: (isLoading: boolean) => void;
+  setIsSearchBarLoading: (isLoading: boolean) => void;
+  setIsModalLoading: (isModalLoading: boolean) => void;
+  setIsCardLoading: (isCardLoading: boolean) => void;
+  setCurrentPage: (currentPage: number) => void;
+  setIsFromMainNavigation: (isFromMainNavigation: boolean) => void;
+  setHasSearched: (hasSearched: boolean) => void;
+  setCachedResults: (results: CachedResults | ((prev: CachedResults) => CachedResults)) => void;
+  resetSearch: () => void;
+}
 
-        // 현재 캐시 데이터 확인
-        const existingCache = cachedResults[cacheKey] || {
-          keywordData: {
-            totalResults: results.totalResults,
-            itemsPerPage: results.itemsPerPage,
-            timestamp: Date.now(),
-          },
-          pageData: {},
-        };
+const initialState: SearchState = {
+  query: '',
+  currentPage: 1,
+  results: null,
+  error: null,
+  isLoading: false,
+  isSearchBarLoading: false,
+  isModalLoading: false,
+  isCardLoading: false,
+  isFromMainNavigation: false,
+  hasSearched: false,
+  cachedResults: {},
+};
 
-        // 페이지별 데이터 업데이트
-        const pageData = { ...existingCache.pageData };
-        pageData[results.page] = {
-          sponsoredResults: results.sponsoredResults,
-          posts: results.posts,
-        };
+export const useSearchStore = create<SearchState & SearchActions>(set => ({
+  ...initialState,
 
-        // 키워드 공통 정보 업데이트 (검색 결과 수가 변경되었을 수 있음)
-        const keywordData = {
-          ...existingCache.keywordData,
-          totalResults: results.totalResults,
-          timestamp: Date.now(),
-        };
+  setQuery: (query: string) => set({ query }),
+  setResults: (results: SearchApiResponse | null) => set({ results }),
+  setError: (error: string | null) => set({ error }),
+  setIsLoading: (isLoading: boolean) => set({ isLoading }),
+  setIsSearchBarLoading: (isLoading: boolean) => set({ isSearchBarLoading: isLoading }),
+  setIsModalLoading: (isModalLoading: boolean) => set({ isModalLoading }),
+  setIsCardLoading: (isCardLoading: boolean) => set({ isCardLoading }),
+  setCurrentPage: (currentPage: number) => set({ currentPage }),
+  setIsFromMainNavigation: (isFromMainNavigation: boolean) => set({ isFromMainNavigation }),
+  setHasSearched: (hasSearched: boolean) => set({ hasSearched }),
+  setCachedResults: (results: CachedResults | ((prev: CachedResults) => CachedResults)) =>
+    set(state => ({
+      cachedResults: typeof results === 'function' ? results(state.cachedResults) : results,
+    })),
 
-        // 캐시 업데이트
-        const updatedCache = {
-          ...cachedResults,
-          [cacheKey]: {
-            keywordData,
-            pageData,
-          },
-        };
-
-        set({
-          results,
-          isLoading: false,
-          hasSearched: true,
-          cachedResults: updatedCache,
-          isFromMainNavigation: false,
-        });
-      },
-      getCachedResults: (query: string, page: number) => {
-        const { cachedResults } = get();
-        const cacheKey = query.toLowerCase().trim();
-
-        if (
-          cachedResults[cacheKey] &&
-          cachedResults[cacheKey].pageData[page] &&
-          // 캐시가 30분 이내인지 확인
-          Date.now() - cachedResults[cacheKey].keywordData.timestamp < 30 * 60 * 1000
-        ) {
-          const cachedData = cachedResults[cacheKey];
-          const cachedPageData = cachedData.pageData[page];
-          const { totalResults, itemsPerPage } = cachedData.keywordData;
-
-          // 새 검색 응답 구조로 조합
-          const responseData: SearchApiResponse = {
-            keyword: cacheKey, // 캐시 키가 검색어
-            totalResults,
-            itemsPerPage,
-            sponsoredResults: cachedPageData.sponsoredResults,
-            page, // 페이지 번호는 파라미터로 받은 값 사용
-            posts: cachedPageData.posts,
-          };
-
-          return responseData;
-        }
-
-        return null;
-      },
-      resetSearch: () =>
-        set({
-          query: '',
-          results: null,
-          isLoading: false,
-          error: null,
-          hasSearched: false,
-          currentPage: 1,
-        }),
-      setPendingFetch: (page, promise) =>
-        set(state => {
-          const newMap = new Map(state.pendingFetches);
-          newMap.set(page, promise);
-          return { pendingFetches: newMap };
-        }),
-      removePendingFetch: page =>
-        set(state => {
-          const newMap = new Map(state.pendingFetches);
-          newMap.delete(page);
-          return { pendingFetches: newMap };
-        }),
-      getPendingFetch: page => get().pendingFetches.get(page),
-      setCurrentPage: (page: number) => set({ currentPage: page }),
-
-      setFromMainNavigation: (value: boolean) => set({ isFromMainNavigation: value }),
-    }),
-    {
-      name: 'search-cache',
-      storage: createJSONStorage(() => localStorage),
-      partialize: state => ({
-        query: state.query,
-        results: state.results,
-        cachedResults: state.cachedResults,
-        hasSearched: state.hasSearched,
-        currentPage: state.currentPage,
-        isLoading: state.isLoading,
-      }),
-    }
-  )
-);
+  resetSearch: () => set(initialState),
+}));
 
 // 새로고침 후 초기화 로직: 저장된 캐시에서 마지막 결과 복원
 if (typeof window !== 'undefined') {
-  // 브라우저 환경에서만 실행 - 즉시 실행 (setTimeout 제거)
+  // 브라우저 환경에서만 실행
   const {
     query,
     currentPage,
-    hasSearched,
     results,
-    getCachedResults,
     setResults,
-    setLoading,
+    setIsLoading,
     resetSearch,
+    cachedResults,
+    setQuery,
+    setCurrentPage,
   } = useSearchStore.getState();
 
+  // URL에서 쿼리 파라미터 읽기
+  const urlParams = new URLSearchParams(window.location.search);
+  const urlQuery = urlParams.get('q');
+  const urlPage = parseInt(urlParams.get('page') || '1', 10);
+
+  // 새로고침 여부 확인
+  const isRefresh = !document.referrer || document.referrer === window.location.href;
   const currentPath = window.location.pathname;
 
-  // 메인 페이지에서는 검색 상태를 완전히 초기화
-  if (currentPath === '/') {
-    resetSearch(); // 쿼리뿐 아니라 hasSearched도 초기화하여 새 검색 시작
-    console.log('메인 페이지 접속: 검색 상태 완전히 초기화');
+  // 메인 페이지에서만 초기화 (새로고침이 아닌 경우)
+  if (currentPath === '/' && !isRefresh) {
+    resetSearch();
   }
-  // 검색 페이지에서만 마지막 결과 복원
+  // 검색 페이지에서는 결과 복원
   else if (currentPath.includes('/search')) {
-    // 이전에 검색 결과가 있었지만 현재 결과가 없는 경우 (새로고침으로 인한 결과 초기화)
-    if (hasSearched && query && !results) {
-      // 로딩 상태 즉시 설정 (새로고침 직후 UI 깜빡임 방지)
-      setLoading(true);
+    // URL에 검색어가 있는 경우 store 상태 업데이트
+    if (urlQuery) {
+      setQuery(decodeURIComponent(urlQuery));
+      setCurrentPage(urlPage);
 
+      // 캐시된 결과 확인 - 즉시 복원
+      const cachedData = cachedResults[urlQuery];
+      if (cachedData) {
+        const pageData = cachedData.pageData[urlPage];
+        if (pageData) {
+          setIsLoading(true);
+          try {
+            const cachedResponse = {
+              keyword: urlQuery,
+              posts: pageData.posts,
+              totalResults: cachedData.keywordData.totalResults,
+              itemsPerPage: cachedData.keywordData.itemsPerPage,
+              sponsoredResults: cachedData.keywordData.sponsoredResults,
+              page: urlPage,
+              isPartialResult: false,
+              isInitialLoad: false,
+              currentCount: pageData.currentCount,
+            };
+            setResults(cachedResponse);
+          } catch (error) {
+            console.error('캐시된 결과 복원 중 오류:', error);
+          } finally {
+            setIsLoading(false);
+          }
+        }
+      }
+    }
+    // URL에 검색어가 없고, store에 이전 검색 결과가 있는 경우
+    else if (query && !results) {
+      setIsLoading(true);
       try {
-        // 캐시된 결과 확인 - 즉시 복원 (딜레이 제거)
-        const cachedResult = getCachedResults(query, currentPage);
-        if (cachedResult) {
-          setResults(cachedResult);
-          console.log(`새로고침 후 '${query}' 검색 결과 즉시 복원 (페이지 ${currentPage})`);
+        const cachedData = cachedResults[query];
+        if (cachedData) {
+          const pageData = cachedData.pageData[currentPage];
+          if (pageData) {
+            const cachedResponse = {
+              keyword: query,
+              posts: pageData.posts,
+              totalResults: cachedData.keywordData.totalResults,
+              itemsPerPage: cachedData.keywordData.itemsPerPage,
+              sponsoredResults: cachedData.keywordData.sponsoredResults,
+              page: currentPage,
+              isPartialResult: false,
+              isInitialLoad: false,
+              currentCount: pageData.currentCount,
+            };
+            setResults(cachedResponse);
+          }
         }
       } catch (error) {
         console.error('캐시된 결과 복원 중 오류:', error);
       } finally {
-        setLoading(false);
+        setIsLoading(false);
       }
     }
   }

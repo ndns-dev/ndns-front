@@ -18,25 +18,23 @@ export default function SearchPage() {
 
   // 컴포넌트 마운트 시 URL에서 쿼리 파라미터 가져와서 검색
   useEffect(() => {
-    // URL 쿼리가 있는 경우에만 처리
-    if (queryParam && queryParam.trim().length >= 2) {
+    // URL 쿼리가 있고 현재 쿼리와 다른 경우에만 처리
+    if (queryParam && queryParam.trim().length >= 2 && queryParam !== query) {
       // 네비게이션에서 온 경우는 handleSearch에서 특별히 처리
       if (isFromNavigation) {
         console.log(`메인 페이지에서 검색 이동: ${queryParam}`);
         handleSearch(queryParam, pageParam);
       }
       // 새로고침이나 직접 URL 입력의 경우: 현재 쿼리와 URL 쿼리가 다르거나 결과가 없는 경우에만 검색
-      else if (queryParam !== query || !results) {
-        console.log(`URL 파라미터로 새 검색 실행: ${queryParam}, 페이지: ${pageParam}`);
+      else if (!results) {
         handleSearch(queryParam, pageParam);
       }
-      // URL의 페이지 파라미터와 현재 페이지가 다른 경우 해당 페이지로 이동
-      else if (pageParam !== currentPage) {
-        console.log(`URL 페이지 파라미터로 페이지 변경: ${pageParam}`);
-        handleSearch(query, pageParam);
-      }
     }
-  }, [queryParam, pageParam, isFromNavigation]);
+    // URL의 페이지 파라미터와 현재 페이지가 다른 경우 해당 페이지로 이동
+    else if (query && pageParam !== currentPage) {
+      handleSearch(query, pageParam);
+    }
+  }, [queryParam, pageParam, isFromNavigation, query, currentPage, results]);
 
   // 페이지 변경 핸들러
   const handlePageChange = (page: number) => {
