@@ -28,47 +28,14 @@ export const Sidebar: React.FC<SidebarProps> = ({ className = '' }) => {
 
   // 스티키 상태 구독 및 애니메이션 개선
   useEffect(() => {
-    const syncWithSearchBar = () => {
+    // 현재 상태와 다를 때만 업데이트
+    if (searchBarOpacity !== searchUIStore.stickyOpacity) {
       setSearchBarOpacity(searchUIStore.stickyOpacity);
-      setSearchBarMode(searchUIStore.searchBarMode);
-    };
-
-    // 초기 상태 동기화
-    syncWithSearchBar();
-
-    // 사이드바 위치 정보를 searchUIStore에 제공
-    if (sidebarRef.current) {
-      const rect = sidebarRef.current.getBoundingClientRect();
-      searchUIStore.setSidebarPosition({
-        top: rect.top,
-        left: rect.left,
-        width: rect.width,
-      });
     }
-
-    // 윈도우 리사이즈 시 사이드바 위치 업데이트
-    const handleResize = () => {
-      if (sidebarRef.current) {
-        const rect = sidebarRef.current.getBoundingClientRect();
-        searchUIStore.setSidebarPosition({
-          top: rect.top,
-          left: rect.left,
-          width: rect.width,
-        });
-      }
-    };
-
-    window.addEventListener('resize', handleResize);
-
-    return () => {
-      window.removeEventListener('resize', handleResize);
-      // 변수에 현재 animationRef.current를 저장하여 클로저 문제 방지
-      const currentAnimationRef = animationRef.current;
-      if (currentAnimationRef !== null) {
-        cancelAnimationFrame(currentAnimationRef);
-      }
-    };
-  }, [searchUIStore.searchBarMode, searchUIStore.stickyOpacity, searchUIStore.setSidebarPosition]);
+    if (searchBarMode !== searchUIStore.searchBarMode) {
+      setSearchBarMode(searchUIStore.searchBarMode);
+    }
+  }, [searchUIStore.stickyOpacity, searchUIStore.searchBarMode]);
 
   // 검색바 스티키 상태에 따른 스타일 반영
   useEffect(() => {
@@ -83,6 +50,33 @@ export const Sidebar: React.FC<SidebarProps> = ({ className = '' }) => {
 
   // 검색바 모드에 따른 스타일 적용
   const showStickySearchBar = isSearchPage && searchBarMode === 'sidebar';
+
+  // 사이드바 위치 업데이트를 위한 별도의 useEffect
+  useEffect(() => {
+    const updateSidebarPosition = () => {
+      if (sidebarRef.current) {
+        const rect = sidebarRef.current.getBoundingClientRect();
+        searchUIStore.setSidebarPosition({
+          top: rect.top,
+          left: rect.left,
+          width: rect.width,
+        });
+      }
+    };
+
+    // 초기 위치 설정
+    updateSidebarPosition();
+
+    // 리사이즈 이벤트 리스너
+    window.addEventListener('resize', updateSidebarPosition);
+
+    return () => {
+      window.removeEventListener('resize', updateSidebarPosition);
+      if (animationRef.current !== null) {
+        cancelAnimationFrame(animationRef.current);
+      }
+    };
+  }, []);
 
   return (
     <div
