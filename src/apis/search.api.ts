@@ -1,10 +1,11 @@
-import { apiClient } from "./base.api";
-import { SearchApiResponse } from "@/types/search.type";
+import { apiClient } from './base.api';
+import { SearchApiResponse } from '@/types/search.type';
 
 export interface SearchParams {
   query: string;
   offset?: number;
   limit?: number;
+  signal?: AbortSignal;
 }
 
 // API 요청 타임아웃 (밀리초)
@@ -16,13 +17,14 @@ export const searchApi = {
    * @param params 검색 파라미터
    */
   searchBlogs: (params: SearchParams): Promise<SearchApiResponse> => {
-    return apiClient.get<SearchApiResponse>("v1/search", {
+    return apiClient.get<SearchApiResponse>('v1/search', {
       params: {
         query: params.query,
         offset: params.offset || 0,
         limit: params.limit || 10,
       },
       timeout: API_TIMEOUT,
+      signal: params.signal,
     });
   },
 };

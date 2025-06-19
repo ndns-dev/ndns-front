@@ -15,9 +15,13 @@ export type ApiResponse<T = unknown> = T;
 /**
  * API 요청 옵션 인터페이스
  */
-export interface ApiRequestOptions extends RequestInit {
-  params?: Record<string, string | number | boolean | undefined>;
+export interface ApiRequestOptions {
+  method?: string;
+  headers?: Record<string, string>;
+  body?: string;
   timeout?: number;
+  signal?: AbortSignal;
+  params?: Record<string, string | number | boolean | undefined>;
   skipRateLimiting?: boolean; // 레이트 리미팅 건너뛰기 옵션
 }
 
