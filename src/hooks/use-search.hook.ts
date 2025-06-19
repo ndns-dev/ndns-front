@@ -529,12 +529,6 @@ export const useSearch = () => {
 
     const requestKey = `${searchQuery}-${page}`;
 
-    // 즉시 로딩 상태 설정
-    setIsModalLoading(true);
-    setIsSearchBarLoading(true);
-    setIsLoading(true);
-    showLoadingModal(requestKey);
-
     // 이미 진행 중인 요청이 있다면 해당 요청을 반환
     if (activeRequests.has(requestKey)) {
       return activeRequests.get(requestKey);
@@ -549,6 +543,9 @@ export const useSearch = () => {
     // 현재 페이지의 프리페칭 상태 확인
     const currentPrefetchKey = getPrefetchKey(searchQuery, page);
     if (prefetchingPages.has(currentPrefetchKey)) {
+      setIsModalLoading(true);
+      showLoadingModal(requestKey);
+
       try {
         // 프리페칭 완료 대기
         await prefetchingPages.get(currentPrefetchKey);
@@ -590,6 +587,29 @@ export const useSearch = () => {
 
     setQuery(searchQuery);
     setCurrentPage(page);
+
+    // 로컬스토리지에서 캐시 확인
+    const storedCache = loadCacheFromStorage();
+    const cachedData = getCurrentPageData(searchQuery, page, storedCache);
+
+    if (cachedData) {
+      // 캐시된 데이터가 있으면 바로 표시
+      setCachedResults(storedCache);
+      setResults(cachedData);
+
+      // 다음 페이지 프리페칭
+      const totalPages = Math.ceil(cachedData.totalResults / ITEMS_PER_PAGE);
+      if (page < totalPages) {
+        prefetchNextPage(searchQuery, page + 1, cachedData.totalResults);
+      }
+      return;
+    }
+
+    // 캐시된 데이터가 없을 때만 로딩 상태 설정
+    setIsModalLoading(true);
+    setIsSearchBarLoading(true);
+    setIsLoading(true);
+    showLoadingModal(requestKey);
 
     const request = fetchPageData(searchQuery, page);
     activeRequests.set(requestKey, request);
