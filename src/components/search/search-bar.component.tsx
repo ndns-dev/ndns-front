@@ -99,22 +99,14 @@ export const SearchBar: React.FC<SearchBarProps> = ({
       }
     };
 
-    // 스크롤 이벤트
     window.addEventListener('scroll', checkScroll, { passive: true });
-
-    // 초기 위치 확인
     checkScroll();
 
     return () => {
       window.removeEventListener('scroll', checkScroll);
       searchUIStore.setSearchBarMode('origin');
     };
-  }, [
-    pathname,
-    searchUIStore.setSearchBarMode,
-    searchUIStore.setStickyOpacity,
-    searchUIStore.setTransition,
-  ]);
+  }, [pathname]);
 
   const onSubmit = (e: FormEvent) => {
     e.preventDefault();
@@ -132,8 +124,6 @@ export const SearchBar: React.FC<SearchBarProps> = ({
         // 검색 페이지의 useEffect에서 검색이 실행될 것임
         router.push(`/search?q=${encodeURIComponent(query)}&page=1`);
       }
-    } else if (query.trim().length > 0) {
-      console.log('검색어를 입력해주세요.');
     }
   };
 
