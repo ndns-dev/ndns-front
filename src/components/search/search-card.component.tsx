@@ -2,6 +2,7 @@ import { SearchResultPost } from '@/types/search.type';
 import { env } from '@/config/env.schema';
 import { formatDate } from '@/utils/format.util';
 import { navigateToExternalUrl } from '@/utils/component.util';
+import { SearchBadge } from '@/components/search/search-badge.component';
 
 interface ResultCardProps {
   post: SearchResultPost;
@@ -21,15 +22,10 @@ export const ResultCard: React.FC<ResultCardProps> = ({ post }) => {
           dangerouslySetInnerHTML={{ __html: post.title }}
         />
         <div className="flex items-center space-x-2">
-          {post.isSponsored ? (
-            <span className="bg-red-100 text-red-800 text-xs font-medium px-2.5 py-0.5 rounded dark:bg-red-900 dark:text-red-300">
-              협찬 ({Math.round(post.sponsorProbability * 100)}%)
-            </span>
-          ) : (
-            <span className="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded dark:bg-green-900 dark:text-green-300">
-              내돈내산
-            </span>
-          )}
+          <SearchBadge
+            isSponsored={post.isSponsored}
+            sponsorProbability={post.sponsorProbability}
+          />
         </div>
       </div>
 
