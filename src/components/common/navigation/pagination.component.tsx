@@ -1,11 +1,6 @@
-import React from "react";
-import { Button } from "@/components/ui";
-import {
-  ChevronsLeft,
-  ChevronLeft,
-  ChevronRight,
-  ChevronsRight,
-} from "lucide-react";
+import React from 'react';
+import { Button } from '@/components/ui';
+import { ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight } from 'lucide-react';
 
 interface PaginationProps {
   currentPage: number;
@@ -18,6 +13,10 @@ export const Pagination: React.FC<PaginationProps> = ({
   totalPages,
   onPageChange,
 }) => {
+  // 공통 스타일 정의
+  const commonButtonStyles =
+    'px-3 py-1 h-9 w-9 bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:shadow-md transition-shadow duration-200 disabled:opacity-50 cursor-pointer';
+
   // 표시할 페이지 번호 (최대 5개)
   const getPageNumbers = () => {
     const pageNumbers = [];
@@ -57,7 +56,7 @@ export const Pagination: React.FC<PaginationProps> = ({
         disabled={currentPage === 1}
         variant="outline"
         size="icon"
-        className="px-3 py-1 h-9 w-9 bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50"
+        className={commonButtonStyles}
       >
         <span className="sr-only">첫 페이지</span>
         <ChevronsLeft className="h-5 w-5" />
@@ -69,22 +68,22 @@ export const Pagination: React.FC<PaginationProps> = ({
         disabled={currentPage === 1}
         variant="outline"
         size="icon"
-        className="px-3 py-1 h-9 w-9 bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50"
+        className={commonButtonStyles}
       >
         <span className="sr-only">이전 페이지</span>
         <ChevronLeft className="h-5 w-5" />
       </Button>
 
       {/* 페이지 번호 버튼들 */}
-      {pageNumbers.map((number) => (
+      {pageNumbers.map(number => (
         <Button
           key={number}
           onClick={() => onPageChange(number)}
-          variant={currentPage === number ? "default" : "outline"}
-          className={`px-3 py-1 h-9 min-w-[36px] ${
+          variant={currentPage === number ? 'default' : 'outline'}
+          className={`px-3 py-1 h-9 min-w-[36px] cursor-pointer ${
             currentPage === number
-              ? "bg-emerald-500 text-white hover:bg-emerald-600"
-              : "bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
+              ? 'bg-emerald-500 text-white hover:shadow-md transition-shadow duration-200'
+              : 'bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-800 hover:shadow-md transition-shadow duration-200'
           }`}
         >
           {number}
@@ -97,7 +96,7 @@ export const Pagination: React.FC<PaginationProps> = ({
         disabled={currentPage === totalPages}
         variant="outline"
         size="icon"
-        className="px-3 py-1 h-9 w-9 bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50"
+        className={commonButtonStyles}
       >
         <span className="sr-only">다음 페이지</span>
         <ChevronRight className="h-5 w-5" />
@@ -109,7 +108,7 @@ export const Pagination: React.FC<PaginationProps> = ({
         disabled={currentPage === totalPages}
         variant="outline"
         size="icon"
-        className="px-3 py-1 h-9 w-9 bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50"
+        className={commonButtonStyles}
       >
         <span className="sr-only">마지막 페이지</span>
         <ChevronsRight className="h-5 w-5" />
