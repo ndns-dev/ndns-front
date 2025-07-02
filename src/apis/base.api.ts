@@ -121,7 +121,11 @@ class ApiClient {
    * @param options 요청 옵션
    * @returns 응답 데이터
    */
-  private async request<T = unknown>(path: string, options: ApiRequestOptions = {}): Promise<T> {
+  private async request<T = unknown>(
+    path: string,
+    options: ApiRequestOptions = {},
+    isHeader: boolean = false
+  ): Promise<T | ApiResponse<T>> {
     // 레이트 리미팅 적용 (특별히 skip 옵션이 없는 경우)
     if (!options.skipRateLimiting) {
       try {
@@ -163,8 +167,18 @@ class ApiClient {
         return {} as T;
       }
 
-      // JSON 응답 파싱
-      return response.json() as Promise<T>;
+      const data = await response.json();
+
+      // isHeader가 true인 경우 데이터와 헤더를 함께 반환
+      if (isHeader) {
+        return {
+          data,
+          headers: response.headers,
+        } as ApiResponse<T>;
+      }
+
+      // isHeader가 false인 경우 데이터만 반환
+      return data as T;
     } catch (error) {
       if (error instanceof Error && error.name === 'AbortError') {
         throw new Error('요청 시간이 초과되었습니다.');
@@ -208,16 +222,30 @@ class ApiClient {
   }
 
   /**
-   * GET 요청
-   * @param path API 경로
-   * @param options 요청 옵션
-   * @returns 응답 데이터
+   * GET 요청 (데이터만 반환)
    */
   public async get<T = unknown>(path: string, options: ApiRequestOptions = {}): Promise<T> {
     return this.request<T>(path, {
       ...options,
       method: 'GET',
-    });
+    }) as Promise<T>;
+  }
+
+  /**
+   * GET 요청 (헤더 포함 반환)
+   */
+  public async getWithHeaders<T = unknown>(
+    path: string,
+    options: ApiRequestOptions = {}
+  ): Promise<ApiResponse<T>> {
+    return this.request<T>(
+      path,
+      {
+        ...options,
+        method: 'GET',
+      },
+      true
+    ) as Promise<ApiResponse<T>>;
   }
 
   /**
