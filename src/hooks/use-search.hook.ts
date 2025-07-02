@@ -2,11 +2,10 @@ import { useEffect, useState } from 'react';
 import { useSearchStore } from '@/store/search.store';
 import { searchApi } from '@/apis/search.api';
 import { SearchApiResponse, CachedResults, SearchResultPost } from '@/types/search.type';
+import { isPendingAnalysis } from '@/utils/post.util';
 
-// 기본 페이지당 항목 수 (API 요청 및 UI에 표시할 항목 수)
+// 기본 페이지당 항목 수
 const ITEMS_PER_PAGE = 10;
-const INITIAL_CHUNK_SIZE = 2;
-const INITIAL_CHUNKS_COUNT = 5;
 const STORAGE_KEY = 'search_cache';
 
 // 로컬스토리지에서 캐시 불러오기
@@ -105,9 +104,6 @@ const convertCachedToResponse = (
     itemsPerPage: cachedData.keywordData.itemsPerPage,
     sponsoredResults: cachedData.keywordData.sponsoredResults,
     page,
-    isPartialResult: false,
-    isInitialLoad: false,
-    currentCount: pageData.currentCount,
   };
 };
 
@@ -162,6 +158,9 @@ export const useSearch = () => {
 
   // 현재 진행 중인 페이지 요청을 추적하기 위한 Map
   const [activeRequests] = useState(() => new Map<string, Promise<void>>());
+
+  // SSE 구독을 관리하기 위한 Map
+  const [activeSubscriptions] = useState(() => new Map<string, () => void>());
 
   // 로딩 모달 관리 함수
   const showLoadingModal = (key: string) => {
@@ -297,7 +296,82 @@ export const useSearch = () => {
     return null;
   };
 
-  // 기본 페칭 (2개씩 5번 호출)
+  // 포스트 업데이트 핸들러
+  const updatePost = (query: string, page: number, updatedPost: SearchResultPost) => {
+    setCachedResults(prevCache => {
+      const existingCache = prevCache[query];
+      if (!existingCache?.pageData[page]) return prevCache;
+
+      const pageData = existingCache.pageData[page];
+      const postIndex = pageData.posts.findIndex(post => post.link === updatedPost.link);
+
+      if (postIndex === -1) return prevCache;
+
+      const updatedPosts = [...pageData.posts];
+      updatedPosts[postIndex] = updatedPost;
+
+      return {
+        ...prevCache,
+        [query]: {
+          ...existingCache,
+          pageData: { ...existingCache.pageData, [page]: { ...pageData, posts: updatedPosts } },
+        },
+      };
+    });
+
+    // 현재 표시 중인 결과 업데이트
+    if (results?.keyword === query && results.page === page) {
+      const updatedPosts = results.posts.map(post =>
+        post.link === updatedPost.link ? updatedPost : post
+      );
+      setResults({ ...results, posts: updatedPosts });
+    }
+  };
+
+  // 분석 상태 구독
+  const subscribeToAnalysis = (query: string, page: number, reqId: string) => {
+    const subscriptionKey = `${query}-${page}-${reqId}`;
+
+    if (activeSubscriptions.has(subscriptionKey)) return;
+
+    const unsubscribe = searchApi.subscribeToAnalysis(reqId, updatedPost => {
+      updatePost(query, page, updatedPost);
+
+      // 현재 표시 중인 결과 업데이트
+      if (results?.keyword === query && results.page === page) {
+        const updatedPosts = results.posts.map(post =>
+          post.link === updatedPost.link ? updatedPost : post
+        );
+        setResults({ ...results, posts: updatedPosts });
+      }
+    });
+
+    activeSubscriptions.set(subscriptionKey, unsubscribe);
+  };
+
+  // 검색 결과 처리 시 분석 대기 중인 포스트 처리
+  const handlePendingAnalysis = (
+    searchQuery: string,
+    page: number,
+    posts: SearchResultPost[],
+    requestId: string
+  ) => {
+    const hasPendingPosts = posts.some(isPendingAnalysis);
+
+    if (hasPendingPosts && requestId) {
+      subscribeToAnalysis(searchQuery, page, requestId);
+    }
+  };
+
+  // 컴포넌트 언마운트 시 모든 구독 정리
+  useEffect(() => {
+    return () => {
+      activeSubscriptions.forEach(unsubscribe => unsubscribe());
+      activeSubscriptions.clear();
+    };
+  }, []);
+
+  // 페이지 데이터 가져오기
   const fetchPageData = async (searchQuery: string, page: number) => {
     const requestKey = `${searchQuery}-${page}`;
 
@@ -321,122 +395,21 @@ export const useSearch = () => {
       }
     }
 
-    // 로컬스토리지에서 직접 캐시 확인
-    const storedCache = loadCacheFromStorage();
-
-    // 캐시 확인
-    const cachedData = getCurrentPageData(searchQuery, page, storedCache);
-    if (cachedData) {
-      // 캐시된 결과도 상태에 반영
-      setCachedResults(storedCache);
-      setResults(cachedData);
-
-      // 모든 로딩 상태 초기화
-      setIsSearchBarLoading(false);
-      setIsModalLoading(false);
-      setIsCardLoading(false);
-      setIsLoading(false);
-      hideLoadingModal(requestKey);
-
-      // 다음 페이지 프리페칭
-      const totalPages = Math.ceil(cachedData.totalResults / ITEMS_PER_PAGE);
-      if (page < totalPages) {
-        prefetchNextPage(searchQuery, page + 1, cachedData.totalResults);
-      }
-      return;
-    }
-
-    // 데이터가 없는 경우 API 요청 시작
-    setResults(null);
-
     try {
-      const chunks: SearchApiResponse[] = [];
-      const baseOffset = (page - 1) * ITEMS_PER_PAGE;
-
-      // 첫 2개 결과 요청
-      const firstChunkResult = await searchApi.searchBlogs({
+      const { data: response, requestId } = await searchApi.searchBlogs({
         query: searchQuery,
-        offset: baseOffset,
-        limit: INITIAL_CHUNK_SIZE,
+        offset: (page - 1) * ITEMS_PER_PAGE,
+        limit: ITEMS_PER_PAGE,
       });
 
-      chunks[0] = firstChunkResult;
-
-      // 첫 번째 청크의 결과를 바로 표시
-      const initialResults: SearchApiResponse = {
-        keyword: searchQuery,
-        posts: firstChunkResult.posts || [],
-        totalResults: firstChunkResult.totalResults,
-        itemsPerPage: ITEMS_PER_PAGE,
-        sponsoredResults: firstChunkResult.sponsoredResults,
-        page,
-        isPartialResult: true,
-        isInitialLoad: true,
-        currentCount: firstChunkResult.posts.length,
-      };
-
-      setResults(initialResults);
-      setIsModalLoading(false);
-      setIsCardLoading(true);
-
-      // 캐시 업데이트
-      updateCache(
-        searchQuery,
-        page,
-        firstChunkResult.posts,
-        firstChunkResult.totalResults,
-        firstChunkResult.sponsoredResults,
-        setCachedResults,
-        0
-      );
-
-      // 나머지 청크 요청
-      for (let i = 1; i < INITIAL_CHUNKS_COUNT; i++) {
-        console.log('나머지 청크 요청:', requestKey, i);
-        const chunkResult = await searchApi.searchBlogs({
-          query: searchQuery,
-          offset: baseOffset + i * INITIAL_CHUNK_SIZE,
-          limit: INITIAL_CHUNK_SIZE,
-        });
-
-        chunks[i] = chunkResult;
-        const combinedPosts = chunks.filter(Boolean).flatMap(chunk => chunk.posts || []);
-
-        updateCache(
-          searchQuery,
-          page,
-          chunkResult.posts,
-          chunkResult.totalResults,
-          chunkResult.sponsoredResults,
-          setCachedResults,
-          i * INITIAL_CHUNK_SIZE
-        );
-
-        // 각 청크의 결과를 누적하여 표시
-        const updatedResults: SearchApiResponse = {
-          ...initialResults,
-          posts: combinedPosts,
-          isPartialResult: true,
-          isInitialLoad: false,
-          currentCount: combinedPosts.length,
-        };
-
-        setResults(updatedResults);
-        await new Promise(resolve => setTimeout(resolve, 500));
-      }
-
-      // 최종 결과 설정
-      const finalResults = chunks.flatMap(chunk => chunk.posts || []);
+      // 결과 즉시 설정
       const pageResults: SearchApiResponse = {
         keyword: searchQuery,
-        posts: finalResults,
-        totalResults: chunks[0]?.totalResults || 0,
+        posts: response.posts,
+        totalResults: response.totalResults,
         itemsPerPage: ITEMS_PER_PAGE,
-        sponsoredResults: chunks[0]?.sponsoredResults || 0,
+        sponsoredResults: response.sponsoredResults,
         page,
-        isPartialResult: false,
-        isInitialLoad: false,
-        currentCount: finalResults.length,
       };
 
       setResults(pageResults);
@@ -444,10 +417,23 @@ export const useSearch = () => {
       setIsSearchBarLoading(false);
       setIsLoading(false);
 
+      // 캐시 업데이트
+      updateCache(
+        searchQuery,
+        page,
+        response.posts,
+        response.totalResults,
+        response.sponsoredResults,
+        setCachedResults
+      );
+
+      // 분석 대기 중인 포스트가 있는 경우에만 SSE 구독 시작
+      handlePendingAnalysis(searchQuery, page, response.posts, requestId);
+
       // 다음 페이지 프리페칭
-      const totalPages = Math.ceil(firstChunkResult.totalResults / ITEMS_PER_PAGE);
+      const totalPages = Math.ceil(response.totalResults / ITEMS_PER_PAGE);
       if (page < totalPages) {
-        prefetchNextPage(searchQuery, page + 1, firstChunkResult.totalResults);
+        prefetchNextPage(searchQuery, page + 1, response.totalResults);
       }
     } catch (error) {
       setError('검색 중 오류가 발생했습니다.');
@@ -487,23 +473,23 @@ export const useSearch = () => {
 
     const prefetchPromise = (async () => {
       try {
-        // 프리페칭은 한 번에 10개 요청
-        const prefetchResponse = await searchApi.searchBlogs({
+        const { data: response, requestId } = await searchApi.searchBlogs({
           query: searchQuery,
           offset: (nextPage - 1) * ITEMS_PER_PAGE,
           limit: ITEMS_PER_PAGE,
-          signal: controller.signal, // AbortController의 signal 전달
+          signal: controller.signal,
         });
 
-        // 프리페칭 결과는 캐시에만 저장
+        // 분석 대기 중인 포스트가 있는 경우에만 SSE 구독 시작
+        handlePendingAnalysis(searchQuery, nextPage, response.posts, requestId);
+
         updateCache(
           searchQuery,
           nextPage,
-          prefetchResponse.posts,
-          prefetchResponse.totalResults,
-          prefetchResponse.sponsoredResults,
-          setCachedResults,
-          0
+          response.posts,
+          response.totalResults,
+          response.sponsoredResults,
+          setCachedResults
         );
       } catch (error) {
         if (error instanceof Error && error.name === 'AbortError') {
