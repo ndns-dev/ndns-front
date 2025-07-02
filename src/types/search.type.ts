@@ -1,8 +1,14 @@
+export interface Source {
+  sponsorType: string;
+  text: string;
+}
+
 export interface SponsorIndicator {
   type: string;
   pattern: string;
   matchedText: string;
-  source: string;
+  source: Source;
+  probability: number;
 }
 
 export interface SearchResultPost {
@@ -24,9 +30,6 @@ export interface SearchApiResponse {
   itemsPerPage: number;
   sponsoredResults: number;
   page: number;
-  isPartialResult?: boolean;
-  isInitialLoad?: boolean;
-  currentCount?: number;
 }
 
 export interface CachedKeywordData {
