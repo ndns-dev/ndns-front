@@ -3,6 +3,7 @@ import { env } from '@/config/env.schema';
 import { formatDate } from '@/utils/format.util';
 import { navigateToExternalUrl } from '@/utils/component.util';
 import { SearchBadge } from '@/components/search/search-badge.component';
+import { isPendingAnalysis, isSponsored } from '@/utils/post.util';
 
 interface ResultCardProps {
   post: SearchResultPost;
@@ -12,7 +13,11 @@ export const ResultCard: React.FC<ResultCardProps> = ({ post }) => {
   return (
     <div
       className={`bg-white dark:bg-gray-800 rounded-lg shadow-md p-5 mb-4 border-l-4 border-transparent hover:border-l-4 ${
-        post.isSponsored ? 'hover:border-red-500' : 'hover:border-emerald-500'
+        isSponsored(post)
+          ? 'hover:border-red-500'
+          : isPendingAnalysis(post)
+          ? 'hover:border-blue-500'
+          : 'hover:border-emerald-500'
       } transition-all cursor-pointer`}
       onClick={() => navigateToExternalUrl(post.link)}
     >
@@ -22,10 +27,7 @@ export const ResultCard: React.FC<ResultCardProps> = ({ post }) => {
           dangerouslySetInnerHTML={{ __html: post.title }}
         />
         <div className="flex items-center space-x-2">
-          <SearchBadge
-            isSponsored={post.isSponsored}
-            sponsorProbability={post.sponsorProbability}
-          />
+          <SearchBadge post={post} />
         </div>
       </div>
 

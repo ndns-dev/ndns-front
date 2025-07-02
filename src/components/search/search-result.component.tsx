@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useEffect, useState, useRef } from 'react';
-import { SearchApiResponse } from '@/types/search.type';
+import React, { useEffect, useState, useRef, RefObject } from 'react';
+import { SearchApiResponse, SearchResult } from '@/types/search.type';
 import { useSearch } from '@/hooks/use-search.hook';
 import { LoadingModal } from '@/components/common/feedback';
 import { Sidebar } from '@/components/common/marketing';
@@ -11,6 +11,7 @@ import { useSearchStore } from '@/store/search.store';
 import { SearchCount } from './search-count.component';
 import { SearchSection } from './search-section.component';
 import { scrollToElement } from '@/utils/scroll.util';
+import { isPendingAnalysis, isSponsored, isNonSponsored } from '@/utils/post.util';
 
 interface SearchResultsProps {
   results: SearchApiResponse | null;
@@ -94,9 +95,10 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
     }
   }, [isLoading, results?.posts.length]);
 
-  // 결과를 내돈내산과 협찬으로 분리
-  const nonSponsoredPosts = results?.posts.filter(post => !post.isSponsored) || [];
-  const sponsoredPosts = results?.posts.filter(post => post.isSponsored) || [];
+  // 결과를 내돈내산, 협찬, 분석중으로 분리
+  const pendingPosts = results?.posts.filter(isPendingAnalysis) || [];
+  const nonSponsoredPosts = results?.posts.filter(isNonSponsored) || [];
+  const sponsoredPosts = results?.posts.filter(isSponsored) || [];
 
   return (
     <>
@@ -108,8 +110,8 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
         <div className="mt-8 w-full max-w-4xl mx-auto h-screen">
           {isFromMainNavigation && <p className="text-center text-gray-500">검색 중...</p>}
         </div>
-      ) : isLoading && results?.isPartialResult ? (
-        // 부분 결과가 있는 경우 결과를 표시하면서 로딩 표시
+      ) : isLoading && results ? (
+        // 로딩 중이면서 결과가 있는 경우 결과를 표시하면서 로딩 표시
         <div className="mt-8 w-full max-w-4xl mx-auto">
           <div className="lg:flex lg:space-x-6">
             <div className="lg:flex-1">
@@ -125,22 +127,31 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
               </div>
 
               <div className="space-y-4">
+                {pendingPosts.length > 0 && (
+                  <SearchSection
+                    title={SearchResult.PENDING}
+                    titleColor="text-blue-500"
+                    posts={pendingPosts}
+                    showLoadingIndicator={true}
+                  />
+                )}
+
                 <SearchSection
-                  title="내돈내산"
+                  title={SearchResult.NON_SPONSORED}
                   titleColor="text-green-500"
                   posts={nonSponsoredPosts}
-                  sectionRef={nonSponsoredSectionRef}
+                  sectionRef={nonSponsoredSectionRef as RefObject<HTMLDivElement>}
                   showAdBanner={true}
                 />
 
                 <SearchSection
-                  title="협찬"
+                  title={SearchResult.SPONSORED}
                   titleColor="text-red-500"
                   posts={sponsoredPosts}
-                  sectionRef={sponsoredSectionRef}
+                  sectionRef={sponsoredSectionRef as RefObject<HTMLDivElement>}
                 />
 
-                {/* 부분 결과일 때는 로딩 표시 */}
+                {/* 로딩 표시 */}
                 <div className="mt-8 text-center">
                   <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-emerald-500 mx-auto"></div>
                   <p className="text-gray-500 mt-2 whitespace-pre-line">
@@ -211,19 +222,28 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
               </div>
 
               <div className="space-y-4">
+                {pendingPosts.length > 0 && (
+                  <SearchSection
+                    title={SearchResult.PENDING}
+                    titleColor="text-blue-500"
+                    posts={pendingPosts}
+                    showLoadingIndicator={true}
+                  />
+                )}
+
                 <SearchSection
-                  title="내돈내산"
+                  title={SearchResult.NON_SPONSORED}
                   titleColor="text-green-500"
                   posts={nonSponsoredPosts}
-                  sectionRef={nonSponsoredSectionRef}
+                  sectionRef={nonSponsoredSectionRef as RefObject<HTMLDivElement>}
                   showAdBanner={true}
                 />
 
                 <SearchSection
-                  title="협찬"
+                  title={SearchResult.SPONSORED}
                   titleColor="text-red-500"
                   posts={sponsoredPosts}
-                  sectionRef={sponsoredSectionRef}
+                  sectionRef={sponsoredSectionRef as RefObject<HTMLDivElement>}
                 />
 
                 {/* 페이지네이션 */}

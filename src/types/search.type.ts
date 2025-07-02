@@ -82,3 +82,11 @@ export interface SearchStateActions {
 }
 
 export type SearchState = SearchStateData & SearchStateActions;
+
+export const SearchResult = {
+  SPONSORED: '협찬',
+  NON_SPONSORED: '내돈내산',
+  PENDING: '분석 중',
+} as const;
+
+export type SearchResultType = (typeof SearchResult)[keyof typeof SearchResult];
