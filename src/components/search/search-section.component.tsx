@@ -7,9 +7,13 @@ interface SearchSectionProps {
   title: string;
   titleColor: string;
   posts: SearchResultPost[];
-  sectionRef?: React.RefObject<HTMLDivElement>;
+  sectionRef?: React.RefObject<HTMLDivElement | null>;
   showAdBanner?: boolean;
   showLoadingIndicator?: boolean;
+  getPostStreamStatus: (
+    post: SearchResultPost
+  ) => { isActive: boolean; isEnded: boolean; jobId: string } | null;
+  onRetry: (jobId: string) => void;
 }
 
 export const SearchSection: React.FC<SearchSectionProps> = ({
@@ -19,6 +23,8 @@ export const SearchSection: React.FC<SearchSectionProps> = ({
   sectionRef,
   showAdBanner = false,
   showLoadingIndicator = false,
+  getPostStreamStatus,
+  onRetry,
 }) => {
   if (posts.length === 0) return null;
 
@@ -36,12 +42,20 @@ export const SearchSection: React.FC<SearchSectionProps> = ({
       </div>
 
       <div className="space-y-4">
-        {posts.map((post, index) => (
-          <React.Fragment key={post.link}>
-            <ResultCard post={post} />
-            {showAdBanner && index === 2 && <AdBanner />}
-          </React.Fragment>
-        ))}
+        {posts.map((post, index) => {
+          const streamStatus = getPostStreamStatus(post);
+          return (
+            <React.Fragment key={post.link}>
+              <ResultCard
+                post={post}
+                isStreamActive={streamStatus?.isActive ?? false}
+                isStreamEnded={streamStatus?.isEnded ?? false}
+                onRetry={streamStatus?.jobId ? () => onRetry(streamStatus.jobId) : undefined}
+              />
+              {showAdBanner && index === 2 && <AdBanner />}
+            </React.Fragment>
+          );
+        })}
       </div>
     </div>
   );

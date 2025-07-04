@@ -1,53 +1,140 @@
 'use client';
 
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Header, Footer } from '@/components/common/navigation';
 import { SearchBar } from '@/components/search/search-bar.component';
 import { SearchResults } from '@/components/search/search-result.component';
 import { useSearch } from '@/hooks/use-search.hook';
+// import { searchApi } from '@/apis/search.api';
+import { SearchResultPost } from '@/types/search.type';
+import { isPendingAnalysis } from '@/utils/post.util';
+
+interface StreamStatus {
+  isActive: boolean;
+  isEnded: boolean;
+}
 
 export default function SearchPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const queryParam = searchParams.get('q') || '';
-  const pageParam = parseInt(searchParams.get('page') || '1', 10);
+  const queryParam = searchParams.get('q');
+  // const pageParam = parseInt(searchParams.get('page') || '1', 10);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const { results, error, currentPage, handleSearch, query, isFromNavigation } = useSearch();
+  const { results, error, isLoading, handleSearch, handlePendingAnalysis } = useSearch();
+  // const isFromMainNavigation = useSearchStore(state => state.isFromMainNavigation);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [activeStreams, setActiveStreams] = useState<Map<string, StreamStatus>>(new Map());
+  const [requestId, setRequestId] = useState<string | null>(null);
+
+  // 페이지 변경 핸들러
+  const handlePageChange = async (page: number) => {
+    if (page === currentPage) return;
+
+    const query = searchParams.get('q') || '';
+    const searchUrl = `/search?q=${encodeURIComponent(query)}&page=${page}`;
+    router.replace(searchUrl);
+
+    const result = await handleSearch(query, page);
+    if (result?.requestId) {
+      setRequestId(result.requestId);
+    }
+    setCurrentPage(page);
+  };
 
   // 컴포넌트 마운트 시 URL에서 쿼리 파라미터 가져와서 검색
   useEffect(() => {
-    // URL 쿼리가 있고 현재 쿼리와 다른 경우에만 처리
-    if (queryParam && queryParam.trim().length >= 2 && queryParam !== query) {
-      // 네비게이션에서 온 경우는 handleSearch에서 특별히 처리
-      if (isFromNavigation) {
-        console.log(`메인 페이지에서 검색 이동: ${queryParam}`);
-        handleSearch(queryParam, pageParam);
-      }
-      // 새로고침이나 직접 URL 입력의 경우: 현재 쿼리와 URL 쿼리가 다르거나 결과가 없는 경우에만 검색
-      else if (!results) {
-        handleSearch(queryParam, pageParam);
-      }
-    }
-    // URL의 페이지 파라미터와 현재 페이지가 다른 경우 해당 페이지로 이동
-    else if (query && pageParam !== currentPage) {
-      handleSearch(query, pageParam);
-    }
-  }, [queryParam, pageParam, isFromNavigation, query, currentPage, results]);
+    const query = searchParams.get('q');
+    const page = Number(searchParams.get('page')) || 1;
 
-  // 페이지 변경 핸들러
-  const handlePageChange = (page: number) => {
     if (query) {
-      // 현재 페이지와 다른 경우에만 처리
-      if (page !== currentPage) {
-        // URL 업데이트
-        router.push(`/search?q=${encodeURIComponent(query)}&page=${page}`);
-        // 이미 캐시된 결과가 있는지 확인
-        handleSearch(query, page);
-      }
+      handleSearch(query, page).then(result => {
+        if (result?.requestId) {
+          setRequestId(result.requestId);
+        }
+        setCurrentPage(page);
+      });
     }
-  };
+  }, [searchParams, handleSearch]);
+
+  // SSE 스트림 구독 관리
+  useEffect(() => {
+    if (!results?.posts || !requestId || isLoading) return;
+
+    // 분석 중인 포스트가 있는지 확인
+    const hasPendingPosts = results.posts.some(post => isPendingAnalysis(post));
+
+    if (!hasPendingPosts) {
+      return;
+    }
+
+    // 이미 활성화된 스트림이 있는지 확인
+    if (activeStreams.has(requestId)) {
+      return;
+    }
+
+    // 상태만 업데이트 (불필요한 리렌더링 방지)
+    setActiveStreams(prev => {
+      const current = prev.get(requestId);
+      if (current?.isActive) {
+        return prev;
+      }
+      const next = new Map(prev);
+      next.set(requestId, { isActive: true, isEnded: false });
+      return next;
+    });
+
+    // cleanup 함수
+    return () => {
+      setActiveStreams(prev => {
+        const current = prev.get(requestId);
+        if (!current) {
+          return prev;
+        }
+        const next = new Map(prev);
+        next.delete(requestId);
+        return next;
+      });
+    };
+  }, [requestId, results?.posts, isLoading]);
+
+  // 재시도 핸들러 (메모이제이션)
+  const handleRetry = useCallback(
+    (jobId: string) => {
+      if (!results) return;
+
+      // 이미 활성화된 스트림이 있는지 확인
+      if (activeStreams.has(jobId)) {
+        return;
+      }
+
+      setActiveStreams(prev => {
+        const next = new Map(prev);
+        next.set(jobId, { isActive: true, isEnded: false });
+        return next;
+      });
+
+      // handlePendingAnalysis(results.keyword, results.page, results.posts, jobId);
+    },
+    [results, handlePendingAnalysis, activeStreams]
+  );
+
+  // 포스트별 스트림 상태 확인 함수 (메모이제이션)
+  const getPostStreamStatus = useCallback(
+    (post: SearchResultPost) => {
+      const jobId = post.sponsorIndicators[0]?.source?.text;
+      if (!jobId) return null;
+
+      const status = activeStreams.get(jobId);
+      return {
+        isActive: status?.isActive ?? false,
+        isEnded: status?.isEnded ?? false,
+        jobId,
+      };
+    },
+    [activeStreams]
+  );
 
   // 컴포넌트 마운트 시 애니메이션 효과
   useEffect(() => {
@@ -72,7 +159,7 @@ export default function SearchPage() {
       <main className="flex-grow flex flex-col items-center px-4 py-8">
         <div className="w-full max-w-4xl mx-auto mb-8 flex justify-center">
           <div className="w-full max-w-2xl">
-            <SearchBar initialQuery={queryParam} isSearchPage={false} />
+            <SearchBar initialQuery={queryParam || ''} isSearchPage={false} />
           </div>
         </div>
 
@@ -86,6 +173,8 @@ export default function SearchPage() {
             error={error}
             onPageChange={handlePageChange}
             currentPage={currentPage}
+            getPostStreamStatus={getPostStreamStatus}
+            onRetry={handleRetry}
           />
         </div>
       </main>

@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useEffect, useState, useRef, RefObject } from 'react';
-import { SearchApiResponse, SearchResult } from '@/types/search.type';
+import React, { useEffect, useState, useRef } from 'react';
+import { SearchApiResponse, SearchResult, SearchResultPost } from '@/types/search.type';
 import { useSearch } from '@/hooks/use-search.hook';
 import { LoadingModal } from '@/components/common/feedback';
 import { Sidebar } from '@/components/common/marketing';
@@ -18,6 +18,10 @@ interface SearchResultsProps {
   error: string | null;
   onPageChange: (page: number) => void;
   currentPage: number;
+  getPostStreamStatus: (
+    post: SearchResultPost
+  ) => { isActive: boolean; isEnded: boolean; jobId: string } | null;
+  onRetry: (jobId: string) => void;
 }
 
 export const SearchResults: React.FC<SearchResultsProps> = ({
@@ -25,6 +29,8 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
   error,
   onPageChange,
   currentPage,
+  getPostStreamStatus,
+  onRetry,
 }) => {
   const { isLoading, isModalLoading } = useSearch();
   const isFromMainNavigation = useSearchStore(state => state.isFromMainNavigation);
@@ -81,6 +87,8 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
 
   // 로딩 상태가 변경될 때마다 타이머 설정
   useEffect(() => {
+    let cleanup: (() => void) | undefined;
+
     if (!isLoading) {
       setLoadingMessages({});
       setSubMessages({});
@@ -89,11 +97,15 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
 
     // 현재 표시된 포스트 수에 따라 새로운 타이머 설정
     if (results?.posts) {
-      const currentCount = results.posts.length;
-      const nextIndex = currentCount;
-      return updateLoadingMessage(nextIndex);
+      cleanup = updateLoadingMessage(results.posts.length);
     }
-  }, [isLoading, results?.posts.length]);
+
+    return () => {
+      if (cleanup) {
+        cleanup();
+      }
+    };
+  }, [isLoading]);
 
   // 결과를 내돈내산, 협찬, 분석중으로 분리
   const pendingPosts = results?.posts.filter(isPendingAnalysis) || [];
@@ -132,24 +144,31 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
                     title={SearchResult.PENDING}
                     titleColor="text-blue-500"
                     posts={pendingPosts}
+                    getPostStreamStatus={getPostStreamStatus}
+                    onRetry={onRetry}
                     showLoadingIndicator={true}
                   />
                 )}
 
-                <SearchSection
-                  title={SearchResult.NON_SPONSORED}
-                  titleColor="text-green-500"
-                  posts={nonSponsoredPosts}
-                  sectionRef={nonSponsoredSectionRef as RefObject<HTMLDivElement>}
-                  showAdBanner={true}
-                />
+                {nonSponsoredPosts.length > 0 && (
+                  <SearchSection
+                    title={SearchResult.NON_SPONSORED}
+                    titleColor="text-green-500"
+                    posts={nonSponsoredPosts}
+                    getPostStreamStatus={getPostStreamStatus}
+                    onRetry={onRetry}
+                  />
+                )}
 
-                <SearchSection
-                  title={SearchResult.SPONSORED}
-                  titleColor="text-red-500"
-                  posts={sponsoredPosts}
-                  sectionRef={sponsoredSectionRef as RefObject<HTMLDivElement>}
-                />
+                {sponsoredPosts.length > 0 && (
+                  <SearchSection
+                    title={SearchResult.SPONSORED}
+                    titleColor="text-red-500"
+                    posts={sponsoredPosts}
+                    getPostStreamStatus={getPostStreamStatus}
+                    onRetry={onRetry}
+                  />
+                )}
 
                 {/* 로딩 표시 */}
                 <div className="mt-8 text-center">
@@ -227,24 +246,31 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
                     title={SearchResult.PENDING}
                     titleColor="text-blue-500"
                     posts={pendingPosts}
+                    getPostStreamStatus={getPostStreamStatus}
+                    onRetry={onRetry}
                     showLoadingIndicator={true}
                   />
                 )}
 
-                <SearchSection
-                  title={SearchResult.NON_SPONSORED}
-                  titleColor="text-green-500"
-                  posts={nonSponsoredPosts}
-                  sectionRef={nonSponsoredSectionRef as RefObject<HTMLDivElement>}
-                  showAdBanner={true}
-                />
+                {nonSponsoredPosts.length > 0 && (
+                  <SearchSection
+                    title={SearchResult.NON_SPONSORED}
+                    titleColor="text-green-500"
+                    posts={nonSponsoredPosts}
+                    getPostStreamStatus={getPostStreamStatus}
+                    onRetry={onRetry}
+                  />
+                )}
 
-                <SearchSection
-                  title={SearchResult.SPONSORED}
-                  titleColor="text-red-500"
-                  posts={sponsoredPosts}
-                  sectionRef={sponsoredSectionRef as RefObject<HTMLDivElement>}
-                />
+                {sponsoredPosts.length > 0 && (
+                  <SearchSection
+                    title={SearchResult.SPONSORED}
+                    titleColor="text-red-500"
+                    posts={sponsoredPosts}
+                    getPostStreamStatus={getPostStreamStatus}
+                    onRetry={onRetry}
+                  />
+                )}
 
                 {/* 페이지네이션 */}
                 {results.totalResults >= results.itemsPerPage && (
