@@ -1,5 +1,5 @@
 import { SearchResult, SearchResultPost } from '@/types/search.type';
-import { isPendingAnalysis, isSponsored, isNonSponsored } from '@/utils/post.util';
+import { isPendingAnalysis, isSponsored } from '@/utils/post.util';
 
 interface SearchBadgeProps {
   post: SearchResultPost;
