@@ -108,23 +108,25 @@ const convertCachedToResponse = (
 };
 
 // 프리페칭 상태 관리를 위한 Map
-const prefetchingPages = new Map<string, Promise<void>>();
+// const prefetchingPages = new Map<string, Promise<{ requestId: string | null }>>();
 // 프리페칭 취소를 위한 AbortController Map
-const prefetchControllers = new Map<string, AbortController>();
+// const prefetchControllers = new Map<string, AbortController>();
 
 // 프리페칭 키 생성 함수
-const getPrefetchKey = (query: string, page: number) => `${query}-${page}`;
+// const getPrefetchKey = (query: string, page: number) => `${query}-${page}`;
 
 // 프리페칭 취소 함수
-const cancelPrefetch = (prefetchKey: string) => {
-  const controller = prefetchControllers.get(prefetchKey);
-  if (controller) {
-    console.log('프리페칭 취소:', prefetchKey);
-    controller.abort();
-    prefetchControllers.delete(prefetchKey);
-    prefetchingPages.delete(prefetchKey);
-  }
-};
+// const cancelPrefetch = (prefetchKey: string) => {
+//   const controller = prefetchControllers.get(prefetchKey);
+//   if (controller) {
+//     if (!controller.signal.aborted) {
+//       console.log('프리페칭 취소:', prefetchKey);
+//       controller.abort();
+//     }
+//     prefetchControllers.delete(prefetchKey);
+//     prefetchingPages.delete(prefetchKey);
+//   }
+// };
 
 export const useSearch = () => {
   const {
@@ -157,7 +159,7 @@ export const useSearch = () => {
   const [activeLoadingModal, setActiveLoadingModal] = useState<string | null>(null);
 
   // 현재 진행 중인 페이지 요청을 추적하기 위한 Map
-  const [activeRequests] = useState(() => new Map<string, Promise<void>>());
+  const [activeRequests] = useState(() => new Map<string, Promise<{ requestId: string | null }>>());
 
   // SSE 구독을 관리하기 위한 Map
   const [activeSubscriptions] = useState(() => new Map<string, () => void>());
@@ -205,12 +207,6 @@ export const useSearch = () => {
           setQuery(decodedQuery);
           setCurrentPage(urlPage);
           setResults(cachedResponse);
-
-          // 다음 페이지 프리페칭
-          const totalPages = Math.ceil(cachedResponse.totalResults / ITEMS_PER_PAGE);
-          if (urlPage < totalPages) {
-            prefetchNextPage(decodedQuery, urlPage + 1, cachedResponse.totalResults);
-          }
         }
       }
     }
@@ -252,21 +248,18 @@ export const useSearch = () => {
       setIsCardLoading(false);
       setIsLoading(false);
 
-      // 상태 업데이트
-      setQuery(decodedQuery);
-      setCurrentPage(urlPage);
-      setResults(cachedResponse);
-
-      // 다음 페이지 프리페칭
-      const totalPages = Math.ceil(cachedResponse.totalResults / ITEMS_PER_PAGE);
-      if (urlPage < totalPages) {
-        prefetchNextPage(decodedQuery, urlPage + 1, cachedResponse.totalResults);
-      }
+      // 상태 업데이트를 한 번에 처리
+      const updateStates = () => {
+        setQuery(decodedQuery);
+        setCurrentPage(urlPage);
+        setResults(cachedResponse);
+      };
+      updateStates();
     } else {
       // 캐시가 없는 경우 새로운 검색 실행
       handleSearch(decodedQuery, urlPage);
     }
-  }, [window.location.search]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [window?.location.search]);
 
   // 캐시된 결과가 완성된 페이지인지 확인
   const isPageComplete = (
@@ -296,70 +289,78 @@ export const useSearch = () => {
     return null;
   };
 
-  // 포스트 업데이트 핸들러
-  const updatePost = (query: string, page: number, updatedPost: SearchResultPost) => {
-    setCachedResults(prevCache => {
-      const existingCache = prevCache[query];
-      if (!existingCache?.pageData[page]) return prevCache;
-
-      const pageData = existingCache.pageData[page];
-      const postIndex = pageData.posts.findIndex(post => post.link === updatedPost.link);
-
-      if (postIndex === -1) return prevCache;
-
-      const updatedPosts = [...pageData.posts];
-      updatedPosts[postIndex] = updatedPost;
-
-      return {
-        ...prevCache,
-        [query]: {
-          ...existingCache,
-          pageData: { ...existingCache.pageData, [page]: { ...pageData, posts: updatedPosts } },
-        },
-      };
-    });
-
-    // 현재 표시 중인 결과 업데이트
-    if (results?.keyword === query && results.page === page) {
-      const updatedPosts = results.posts.map(post =>
-        post.link === updatedPost.link ? updatedPost : post
-      );
-      setResults({ ...results, posts: updatedPosts });
-    }
-  };
-
-  // 분석 상태 구독
-  const subscribeToAnalysis = (query: string, page: number, reqId: string) => {
-    const subscriptionKey = `${query}-${page}-${reqId}`;
-
-    if (activeSubscriptions.has(subscriptionKey)) return;
-
-    const unsubscribe = searchApi.subscribeToAnalysis(reqId, updatedPost => {
-      updatePost(query, page, updatedPost);
-
-      // 현재 표시 중인 결과 업데이트
-      if (results?.keyword === query && results.page === page) {
-        const updatedPosts = results.posts.map(post =>
-          post.link === updatedPost.link ? updatedPost : post
-        );
-        setResults({ ...results, posts: updatedPosts });
-      }
-    });
-
-    activeSubscriptions.set(subscriptionKey, unsubscribe);
-  };
-
   // 검색 결과 처리 시 분석 대기 중인 포스트 처리
   const handlePendingAnalysis = (
     searchQuery: string,
     page: number,
     posts: SearchResultPost[],
-    requestId: string
+    requestId: string,
+    sseToken: string,
+    source: 'fetchPageData' | 'prefetchNextPage' = 'fetchPageData'
   ) => {
-    const hasPendingPosts = posts.some(isPendingAnalysis);
+    // 이미 해당 requestId에 대한 구독이 있다면 스킵
+    if (activeSubscriptions.has(requestId)) {
+      console.log(`[SSE] 이미 구독 중인 스트림 (${source}):`, { requestId, page });
+      return;
+    }
 
-    if (hasPendingPosts && requestId) {
-      subscribeToAnalysis(searchQuery, page, requestId);
+    const hasPendingPosts = posts.some(isPendingAnalysis);
+    if (!hasPendingPosts) {
+      console.log(`[SSE] 분석 대기 중인 포스트 없음 (${source}):`, { requestId, page });
+      return;
+    }
+
+    console.log(`[SSE] 새로운 스트림 구독 시작 (${source}):`, {
+      requestId,
+      page,
+      pendingCount: posts.filter(isPendingAnalysis).length,
+    });
+
+    const unsubscribe = searchApi.subscribeToAnalysis(requestId, sseToken, updatedPost => {
+      // 상태 업데이트를 배치로 처리하여 불필요한 리렌더링 방지
+      const batchUpdate = () => {
+        setCachedResults(prevCache => {
+          const existingCache = prevCache[searchQuery];
+          if (!existingCache?.pageData[page]) return prevCache;
+
+          const pageData = existingCache.pageData[page];
+          const postIndex = pageData.posts.findIndex(post => post.link === updatedPost.link);
+          if (postIndex === -1) return prevCache;
+
+          const updatedPosts = [...pageData.posts];
+          updatedPosts[postIndex] = updatedPost;
+
+          const newCache = {
+            ...prevCache,
+            [searchQuery]: {
+              ...existingCache,
+              pageData: {
+                ...existingCache.pageData,
+                [page]: { ...pageData, posts: updatedPosts },
+              },
+            },
+          };
+
+          // 로컬스토리지 업데이트
+          saveCacheToStorage(newCache);
+          return newCache;
+        });
+
+        // 현재 표시 중인 결과만 업데이트
+        if (results?.keyword === searchQuery && results.page === page) {
+          const updatedPosts = results.posts.map((post: SearchResultPost) =>
+            post.link === updatedPost.link ? updatedPost : post
+          );
+          setResults({ ...results, posts: updatedPosts });
+        }
+      };
+
+      // requestAnimationFrame을 사용하여 상태 업데이트를 최적화
+      requestAnimationFrame(batchUpdate);
+    });
+
+    if (unsubscribe) {
+      activeSubscriptions.set(requestId, unsubscribe);
     }
   };
 
@@ -369,34 +370,21 @@ export const useSearch = () => {
       activeSubscriptions.forEach(unsubscribe => unsubscribe());
       activeSubscriptions.clear();
     };
-  }, []);
+  }, [activeSubscriptions]);
 
   // 페이지 데이터 가져오기
-  const fetchPageData = async (searchQuery: string, page: number) => {
+  const fetchPageData = async (
+    searchQuery: string,
+    page: number
+  ): Promise<{ requestId: string | null }> => {
     const requestKey = `${searchQuery}-${page}`;
 
-    // 현재 진행 중인 프리페칭이 있다면 취소하고 캐시 확인
-    const prefetchKey = getPrefetchKey(searchQuery, page);
-    if (prefetchingPages.has(prefetchKey)) {
-      cancelPrefetch(prefetchKey);
-
-      // 취소 후 캐시 확인
-      const storedCache = loadCacheFromStorage();
-      const cachedData = getCurrentPageData(searchQuery, page, storedCache);
-      if (cachedData) {
-        setCachedResults(storedCache);
-        setResults(cachedData);
-        setIsModalLoading(false);
-        setIsSearchBarLoading(false);
-        setIsCardLoading(false);
-        setIsLoading(false);
-        hideLoadingModal(requestKey);
-        return;
-      }
-    }
-
     try {
-      const { data: response, requestId } = await searchApi.searchBlogs({
+      const {
+        data: response,
+        requestId,
+        sseToken,
+      } = await searchApi.searchBlogs({
         query: searchQuery,
         offset: (page - 1) * ITEMS_PER_PAGE,
         limit: ITEMS_PER_PAGE,
@@ -413,9 +401,13 @@ export const useSearch = () => {
       };
 
       setResults(pageResults);
-      setIsCardLoading(false);
-      setIsSearchBarLoading(false);
+
+      // 모든 로딩 상태 해제
       setIsLoading(false);
+      setIsSearchBarLoading(false);
+      setIsCardLoading(false);
+      setIsModalLoading(false);
+      hideLoadingModal(requestKey);
 
       // 캐시 업데이트
       updateCache(
@@ -428,186 +420,108 @@ export const useSearch = () => {
       );
 
       // 분석 대기 중인 포스트가 있는 경우에만 SSE 구독 시작
-      handlePendingAnalysis(searchQuery, page, response.posts, requestId);
+      handlePendingAnalysis(
+        searchQuery,
+        page,
+        response.posts,
+        requestId,
+        sseToken,
+        'fetchPageData'
+      );
 
-      // 다음 페이지 프리페칭
-      const totalPages = Math.ceil(response.totalResults / ITEMS_PER_PAGE);
-      if (page < totalPages) {
-        prefetchNextPage(searchQuery, page + 1, response.totalResults);
-      }
+      return { requestId: requestId || null };
     } catch (error) {
       setError('검색 중 오류가 발생했습니다.');
       console.error('Search error:', error);
       setResults(null);
-      setIsSearchBarLoading(false);
+
+      // 에러 시에도 모든 로딩 상태 해제
       setIsLoading(false);
+      setIsSearchBarLoading(false);
       setIsCardLoading(false);
-    } finally {
+      setIsModalLoading(false);
       hideLoadingModal(requestKey);
+
+      return { requestId: null };
     }
   };
 
-  // 다음 페이지 프리페칭 (10개씩 1번 호출)
-  const prefetchNextPage = async (searchQuery: string, nextPage: number, totalResults: number) => {
-    const prefetchKey = getPrefetchKey(searchQuery, nextPage);
-
-    // 이미 프리페칭 중이면 스킵
-    if (prefetchingPages.has(prefetchKey)) {
-      return;
+  /**
+   * 검색을 실행하고 결과를 처리합니다.
+   */
+  const handleSearch = async (
+    searchQuery: string | null,
+    page: number = 1
+  ): Promise<{ requestId: string | null }> => {
+    if (!searchQuery) {
+      setIsLoading(false);
+      setIsSearchBarLoading(false);
+      setIsCardLoading(false);
+      setIsModalLoading(false);
+      return { requestId: null };
     }
 
-    // 로컬스토리지에서 직접 캐시 확인
-    const storedCache = loadCacheFromStorage();
-    if (isPageComplete(searchQuery, nextPage, storedCache)) {
-      return;
+    const trimmedQuery = searchQuery.trim();
+    if (trimmedQuery.length < 2) {
+      setError('검색어는 2글자 이상이어야 합니다.');
+      setIsLoading(false);
+      setIsSearchBarLoading(false);
+      setIsCardLoading(false);
+      setIsModalLoading(false);
+      return { requestId: null };
     }
 
-    const totalPages = Math.ceil(totalResults / ITEMS_PER_PAGE);
-    if (nextPage > totalPages) {
-      return;
-    }
-
-    // 새로운 AbortController 생성
-    const controller = new AbortController();
-    prefetchControllers.set(prefetchKey, controller);
-
-    const prefetchPromise = (async () => {
-      try {
-        const { data: response, requestId } = await searchApi.searchBlogs({
-          query: searchQuery,
-          offset: (nextPage - 1) * ITEMS_PER_PAGE,
-          limit: ITEMS_PER_PAGE,
-          signal: controller.signal,
-        });
-
-        // 분석 대기 중인 포스트가 있는 경우에만 SSE 구독 시작
-        handlePendingAnalysis(searchQuery, nextPage, response.posts, requestId);
-
-        updateCache(
-          searchQuery,
-          nextPage,
-          response.posts,
-          response.totalResults,
-          response.sponsoredResults,
-          setCachedResults
-        );
-      } catch (error) {
-        if (error instanceof Error && error.name === 'AbortError') {
-          console.log('프리페칭 취소됨:', prefetchKey);
-        } else {
-          console.error('프리페칭 오류:', prefetchKey, error);
-        }
-      } finally {
-        prefetchControllers.delete(prefetchKey);
-        prefetchingPages.delete(prefetchKey);
-      }
-    })();
-
-    prefetchingPages.set(prefetchKey, prefetchPromise);
-  };
-
-  // 검색 핸들러
-  const handleSearch = async (searchQuery: string, page: number = 1) => {
-    if (!searchQuery.trim()) {
-      setError('검색어를 입력해주세요.');
-      return;
-    }
-
-    const requestKey = `${searchQuery}-${page}`;
+    const requestKey = `${trimmedQuery}-${page}`;
 
     // 이미 진행 중인 요청이 있다면 해당 요청을 반환
     if (activeRequests.has(requestKey)) {
-      return activeRequests.get(requestKey);
+      const request = activeRequests.get(requestKey);
+      return request || { requestId: null };
     }
 
-    // 프리페칭 중인 이전 페이지가 있는지 확인
-    const prevPageKey = getPrefetchKey(searchQuery, page - 1);
-    if (prefetchingPages.has(prevPageKey)) {
-      cancelPrefetch(prevPageKey);
-    }
-
-    // 현재 페이지의 프리페칭 상태 확인
-    const currentPrefetchKey = getPrefetchKey(searchQuery, page);
-    if (prefetchingPages.has(currentPrefetchKey)) {
-      setIsModalLoading(true);
-      showLoadingModal(requestKey);
-
-      try {
-        // 프리페칭 완료 대기
-        await prefetchingPages.get(currentPrefetchKey);
-
-        // 로컬스토리지에서 최신 캐시 확인
-        const storedCache = loadCacheFromStorage();
-        const cachedData = getCurrentPageData(searchQuery, page, storedCache);
-
-        if (cachedData) {
-          setCachedResults(storedCache);
-          setQuery(searchQuery);
-          setCurrentPage(page);
-          setResults(cachedData);
-
-          // 모든 로딩 상태 초기화
-          setIsModalLoading(false);
-          setIsSearchBarLoading(false);
-          setIsCardLoading(false);
-          setIsLoading(false);
-          hideLoadingModal(requestKey);
-
-          // 다음 페이지 프리페칭
-          const totalPages = Math.ceil(cachedData.totalResults / ITEMS_PER_PAGE);
-          if (page < totalPages) {
-            prefetchNextPage(searchQuery, page + 1, cachedData.totalResults);
-          }
-          return;
-        }
-      } catch (error) {
-        console.error('프리페칭 대기 중 오류:', currentPrefetchKey, error);
-      }
-    }
-
-    // 다음 페이지의 프리페칭 상태 확인 및 취소
-    const nextPageKey = getPrefetchKey(searchQuery, page + 1);
-    if (prefetchingPages.has(nextPageKey)) {
-      cancelPrefetch(nextPageKey);
-    }
-
-    setQuery(searchQuery);
+    // 기본 상태 업데이트
+    setIsLoading(true);
+    setIsSearchBarLoading(true);
+    setIsCardLoading(true);
+    setIsModalLoading(true);
+    setQuery(trimmedQuery);
     setCurrentPage(page);
 
     // 로컬스토리지에서 캐시 확인
     const storedCache = loadCacheFromStorage();
-    const cachedData = getCurrentPageData(searchQuery, page, storedCache);
+    const cachedData = getCurrentPageData(trimmedQuery, page, storedCache);
 
     if (cachedData) {
       // 캐시된 데이터가 있으면 바로 표시
+      setIsLoading(false);
+      setIsSearchBarLoading(false);
+      setIsCardLoading(false);
+      setIsModalLoading(false);
       setCachedResults(storedCache);
       setResults(cachedData);
-
-      // 다음 페이지 프리페칭
-      const totalPages = Math.ceil(cachedData.totalResults / ITEMS_PER_PAGE);
-      if (page < totalPages) {
-        prefetchNextPage(searchQuery, page + 1, cachedData.totalResults);
-      }
-      return;
+      return { requestId: null };
     }
 
     // 캐시된 데이터가 없을 때만 로딩 상태 설정
-    setIsModalLoading(true);
-    setIsSearchBarLoading(true);
-    setIsLoading(true);
     showLoadingModal(requestKey);
 
-    const request = fetchPageData(searchQuery, page);
+    const request = fetchPageData(trimmedQuery, page);
     activeRequests.set(requestKey, request);
 
     try {
-      await request;
+      const result = await request;
+      return result;
+    } catch (error) {
+      console.error('Search error:', error);
+      setIsLoading(false);
+      setIsSearchBarLoading(false);
+      setIsCardLoading(false);
+      setIsModalLoading(false);
+      hideLoadingModal(requestKey);
+      return { requestId: null };
     } finally {
       activeRequests.delete(requestKey);
-      hideLoadingModal(requestKey);
     }
-
-    return request;
   };
 
   return {
@@ -625,5 +539,6 @@ export const useSearch = () => {
     isFromMainNavigation,
     setIsFromMainNavigation,
     isFromNavigation,
+    handlePendingAnalysis,
   };
 };
