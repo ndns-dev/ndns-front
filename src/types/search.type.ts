@@ -90,3 +90,15 @@ export const SearchResult = {
 } as const;
 
 export type SearchResultType = (typeof SearchResult)[keyof typeof SearchResult];
+
+export interface AnalysisResult {
+  reqId: string;
+  jobId: string;
+  isSponsored: boolean;
+  sponsorProbability: number;
+  sponsorIndicator: SponsorIndicator;
+}
+
+export interface AnalysisMessage {
+  result: AnalysisResult;
+}
