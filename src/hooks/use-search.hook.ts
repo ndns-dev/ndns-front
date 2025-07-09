@@ -154,7 +154,7 @@ export const useSearch = () => {
   } = useSearchStore();
 
   // 네비게이션에서 온 검색인지 확인하는 상태
-  const [isFromNavigation, setIsFromNavigation] = useState<boolean>(isFromMainNavigation);
+  // const [isFromNavigation, setIsFromNavigation] = useState<boolean>(isFromMainNavigation);
   // 현재 활성화된 로딩 모달 추적
   const [activeLoadingModal, setActiveLoadingModal] = useState<string | null>(null);
 
@@ -186,80 +186,14 @@ export const useSearch = () => {
     const storedCache = loadCacheFromStorage();
     if (Object.keys(storedCache).length > 0) {
       setCachedResults(storedCache);
-
-      // 현재 URL 파라미터 확인
-      const urlParams = new URLSearchParams(window.location.search);
-      const urlQuery = urlParams.get('q');
-      const urlPage = parseInt(urlParams.get('page') || '1', 10);
-
-      if (urlQuery) {
-        const decodedQuery = decodeURIComponent(urlQuery);
-        const cachedResponse = convertCachedToResponse(decodedQuery, urlPage, storedCache);
-
-        if (cachedResponse && isPageComplete(decodedQuery, urlPage, storedCache)) {
-          // 모든 로딩 상태 초기화
-          setIsSearchBarLoading(false);
-          setIsModalLoading(false);
-          setIsCardLoading(false);
-          setIsLoading(false);
-
-          // 상태 업데이트
-          setQuery(decodedQuery);
-          setCurrentPage(urlPage);
-          setResults(cachedResponse);
-        }
-      }
     }
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []);
 
-  // URL 파라미터 처리 및 캐시된 결과 적용
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-
-    const urlParams = new URLSearchParams(window.location.search);
-    const urlQuery = urlParams.get('q');
-    const urlPage = parseInt(urlParams.get('page') || '1', 10);
-
-    if (!urlQuery) return;
-
-    const decodedQuery = decodeURIComponent(urlQuery);
-
-    // 현재 상태와 URL 파라미터가 다를 때만 처리
-    if (decodedQuery === query && urlPage === currentPage) {
-      return;
-    }
-
-    // referrer가 있고 같은 도메인이면서 /search가 아니면 네비게이션에서 온 것
-    const referrer = document.referrer;
-    const currentHost = window.location.host;
-    const isFromMainPage = referrer.includes(currentHost) && !referrer.includes('/search');
-
-    setIsFromNavigation(isFromMainPage);
-    setIsFromMainNavigation(isFromMainPage);
-
-    // 캐시 확인
-    const storedCache = loadCacheFromStorage();
-    const cachedResponse = convertCachedToResponse(decodedQuery, urlPage, storedCache);
-
-    if (cachedResponse && isPageComplete(decodedQuery, urlPage, storedCache)) {
-      // 모든 로딩 상태 초기화
-      setIsSearchBarLoading(false);
-      setIsModalLoading(false);
-      setIsCardLoading(false);
-      setIsLoading(false);
-
-      // 상태 업데이트를 한 번에 처리
-      const updateStates = () => {
-        setQuery(decodedQuery);
-        setCurrentPage(urlPage);
-        setResults(cachedResponse);
-      };
-      updateStates();
-    } else {
-      // 캐시가 없는 경우 새로운 검색 실행
-      handleSearch(decodedQuery, urlPage);
-    }
-  }, [window?.location.search]);
+  // URL 파라미터 처리 및 캐시된 결과 적용 로직 제거
+  // useEffect(() => {
+  //   if (typeof window === 'undefined') return;
+  //   ...
+  // }, [window?.location.search]);
 
   // 캐시된 결과가 완성된 페이지인지 확인
   const isPageComplete = (
@@ -316,19 +250,111 @@ export const useSearch = () => {
       pendingCount: posts.filter(isPendingAnalysis).length,
     });
 
-    const unsubscribe = searchApi.subscribeToAnalysis(requestId, sseToken, updatedPost => {
+    // jobId와 post를 매핑하는 Map 생성
+    const postJobMap = new Map<string, number>();
+    posts.forEach((post, index) => {
+      if (isPendingAnalysis(post)) {
+        // 분석 중인 포스트의 경우 jobId를 찾음
+        const jobId = post.sponsorIndicators[0]?.source?.text;
+        if (jobId) {
+          postJobMap.set(jobId, index);
+          console.log('[SSE] 포스트 매핑 추가:', {
+            index,
+            jobId,
+            title: post.title,
+            indicators: post.sponsorIndicators,
+          });
+        }
+      }
+    });
+
+    const unsubscribe = searchApi.subscribeToAnalysis(requestId, sseToken, analysisResult => {
+      console.log('[SSE] 분석 결과 수신:', {
+        ...analysisResult,
+        availableJobIds: Array.from(postJobMap.keys()),
+        posts: posts.map(post => ({
+          title: post.title,
+          jobId: post.sponsorIndicators[0]?.source?.text,
+          isPending: isPendingAnalysis(post),
+        })),
+      });
+
       // 상태 업데이트를 배치로 처리하여 불필요한 리렌더링 방지
       const batchUpdate = () => {
+        let updatedCache = false;
+
+        console.log('[SSE] 업데이트 시도:', {
+          results,
+          searchQuery,
+          page,
+          hasResults: !!results,
+          currentKeyword: results?.keyword,
+          currentPage: results?.page,
+        });
+
+        // 캐시 업데이트
         setCachedResults(prevCache => {
           const existingCache = prevCache[searchQuery];
           if (!existingCache?.pageData[page]) return prevCache;
 
           const pageData = existingCache.pageData[page];
-          const postIndex = pageData.posts.findIndex(post => post.link === updatedPost.link);
-          if (postIndex === -1) return prevCache;
 
+          // 모든 분석 대기 중인 포스트를 확인
+          let foundPostIndex = -1;
+          pageData.posts.forEach((post, index) => {
+            if (isPendingAnalysis(post)) {
+              console.log('Checking post:', {
+                title: post.title,
+                storedJobId: post.sponsorIndicators[0]?.source?.text,
+                receivedJobId: analysisResult.jobId,
+                isPending: isPendingAnalysis(post),
+              });
+
+              if (post.sponsorIndicators[0]?.source?.text === analysisResult.jobId) {
+                foundPostIndex = index;
+              }
+            }
+          });
+
+          if (foundPostIndex === -1) {
+            console.log('[SSE] 매칭되는 포스트를 찾을 수 없음:', {
+              jobId: analysisResult.jobId,
+              availableJobIds: Array.from(postJobMap.keys()),
+              posts: pageData.posts.map(post => ({
+                title: post.title,
+                jobId: post.sponsorIndicators[0]?.source?.text,
+                isPending: isPendingAnalysis(post),
+              })),
+            });
+            return prevCache;
+          }
+
+          updatedCache = true;
           const updatedPosts = [...pageData.posts];
-          updatedPosts[postIndex] = updatedPost;
+          // 기존 포스트 데이터를 유지하면서 분석 결과만 업데이트
+          updatedPosts[foundPostIndex] = {
+            ...updatedPosts[foundPostIndex],
+            isSponsored: analysisResult.isSponsored,
+            sponsorProbability: analysisResult.sponsorProbability,
+            // 기존 indicators를 모두 제거하고 새로운 indicator로 교체
+            sponsorIndicators: [
+              {
+                type: analysisResult.sponsorIndicator.type,
+                pattern: analysisResult.sponsorIndicator.pattern,
+                matchedText: analysisResult.sponsorIndicator.matchedText,
+                probability: analysisResult.sponsorIndicator.probability,
+                source: analysisResult.sponsorIndicator.source,
+              },
+            ],
+          };
+
+          console.log('[SSE] 포스트 업데이트:', {
+            index: foundPostIndex,
+            title: updatedPosts[foundPostIndex].title,
+            isSponsored: analysisResult.isSponsored,
+            oldIndicators: pageData.posts[foundPostIndex].sponsorIndicators,
+            newIndicators: updatedPosts[foundPostIndex].sponsorIndicators,
+          });
 
           const newCache = {
             ...prevCache,
@@ -346,12 +372,37 @@ export const useSearch = () => {
           return newCache;
         });
 
-        // 현재 표시 중인 결과만 업데이트
-        if (results?.keyword === searchQuery && results.page === page) {
-          const updatedPosts = results.posts.map((post: SearchResultPost) =>
-            post.link === updatedPost.link ? updatedPost : post
-          );
-          setResults({ ...results, posts: updatedPosts });
+        // 현재 표시 중인 결과만 업데이트 (캐시 업데이트 성공 여부와 관계없이 체크)
+        const currentCache = loadCacheFromStorage();
+        const latestPageData = currentCache[searchQuery]?.pageData[page];
+
+        if (latestPageData) {
+          console.log('[SSE] 최신 캐시 데이터로 UI 업데이트 시도:', {
+            hasResults: !!results,
+            currentKeyword: results?.keyword,
+            targetKeyword: searchQuery,
+            currentPage: results?.page,
+            targetPage: page,
+            cacheUpdated: updatedCache,
+            posts: latestPageData.posts.map(post => ({
+              title: post.title,
+              isSponsored: post.isSponsored,
+              isPending: isPendingAnalysis(post),
+              indicators: post.sponsorIndicators,
+            })),
+          });
+
+          // results가 없거나 현재 페이지/키워드가 일치할 때 업데이트
+          if (!results || (results.keyword === searchQuery && results.page === page)) {
+            setResults({
+              keyword: searchQuery,
+              posts: latestPageData.posts,
+              totalResults: currentCache[searchQuery].keywordData.totalResults,
+              itemsPerPage: currentCache[searchQuery].keywordData.itemsPerPage,
+              sponsoredResults: currentCache[searchQuery].keywordData.sponsoredResults,
+              page,
+            });
+          }
         }
       };
 
@@ -538,7 +589,7 @@ export const useSearch = () => {
     resetSearch,
     isFromMainNavigation,
     setIsFromMainNavigation,
-    isFromNavigation,
+    // isFromNavigation,
     handlePendingAnalysis,
   };
 };
