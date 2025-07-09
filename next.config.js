@@ -1,5 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  output: 'export',
   images: {
     unoptimized: true,
     domains: ['blogfiles.naver.net', 'postfiles.pstatic.net'],
