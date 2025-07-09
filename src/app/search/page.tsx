@@ -6,7 +6,6 @@ import { Header, Footer } from '@/components/common/navigation';
 import { SearchBar } from '@/components/search/search-bar.component';
 import { SearchResults } from '@/components/search/search-result.component';
 import { useSearch } from '@/hooks/use-search.hook';
-// import { searchApi } from '@/apis/search.api';
 import { SearchResultPost } from '@/types/search.type';
 import { isPendingAnalysis } from '@/utils/post.util';
 
@@ -19,11 +18,9 @@ export default function SearchPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const queryParam = searchParams.get('q');
-  // const pageParam = parseInt(searchParams.get('page') || '1', 10);
   const containerRef = useRef<HTMLDivElement>(null);
 
   const { results, error, isLoading, handleSearch, handlePendingAnalysis } = useSearch();
-  // const isFromMainNavigation = useSearchStore(state => state.isFromMainNavigation);
   const [currentPage, setCurrentPage] = useState(1);
   const [activeStreams, setActiveStreams] = useState<Map<string, StreamStatus>>(new Map());
   const [requestId, setRequestId] = useState<string | null>(null);
@@ -49,14 +46,21 @@ export default function SearchPage() {
     const page = Number(searchParams.get('page')) || 1;
 
     if (query) {
-      handleSearch(query, page).then(result => {
+      const decodedQuery = decodeURIComponent(query);
+
+      // 현재 상태와 URL 파라미터가 같으면 스킵
+      if (results?.keyword === decodedQuery && results.page === page) {
+        return;
+      }
+
+      handleSearch(decodedQuery, page).then(result => {
         if (result?.requestId) {
           setRequestId(result.requestId);
         }
         setCurrentPage(page);
       });
     }
-  }, [searchParams, handleSearch]);
+  }, [searchParams]);
 
   // SSE 스트림 구독 관리
   useEffect(() => {
@@ -114,8 +118,6 @@ export default function SearchPage() {
         next.set(jobId, { isActive: true, isEnded: false });
         return next;
       });
-
-      // handlePendingAnalysis(results.keyword, results.page, results.posts, jobId);
     },
     [results, handlePendingAnalysis, activeStreams]
   );
