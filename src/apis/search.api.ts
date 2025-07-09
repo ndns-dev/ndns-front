@@ -1,8 +1,8 @@
 import { apiClient } from './base.api';
-import { SearchApiResponse, SearchResultPost } from '@/types/search.type';
+import { AnalysisMessage, AnalysisResult, SearchApiResponse } from '@/types/search.type';
 import { env } from '@/config/env.schema';
 import { EventSourcePolyfill } from 'event-source-polyfill';
-
+import { SseType } from '@/types/sse.type';
 export interface SearchParams {
   query: string;
   offset?: number;
@@ -17,20 +17,6 @@ interface AnalysisCallbacks {
   onComplete: () => void;
   onError: () => void;
 }
-
-// // SSE 연결 관리를 위한 Map
-// const activeConnections = new Map<
-//   string,
-//   {
-//     eventSource: EventSourcePolyfill;
-//     retryCount: number;
-//     isConnected: boolean;
-//   }
-// >();
-
-// // SSE 연결 재시도 설정
-// const MAX_RETRY_COUNT = 3;
-// const RETRY_INTERVAL = 1000;
 
 export const searchApi = {
   /**
@@ -54,7 +40,7 @@ export const searchApi = {
     );
     const requestId = response.headers.get('X-Req-Id');
     const sseToken = response.headers.get('X-Sse-Token');
-    console.log('[SSE] 토큰 - 검색 요청:', { requestId, sseToken });
+    console.log('[SSE] 토큰 - 검색 요청:', { query: params.query, requestId, sseToken });
     if (!requestId || !sseToken) {
       throw new Error('정상적인 요청이 아닙니다. 다시 시도해주세요.');
     }
@@ -75,9 +61,9 @@ export const searchApi = {
   subscribeToAnalysis: (
     requestId: string,
     sseToken: string,
-    onUpdate: (post: SearchResultPost) => void
+    onUpdate: (result: AnalysisResult) => void
   ): (() => void) | undefined => {
-    console.log('[SSE] 토큰 - 분석 요청:', { requestId, sseToken });
+    console.log('[SSE] 토큰 - 분석 요청1:', { requestId, sseToken });
 
     const url = `${process.env.NEXT_PUBLIC_API_URL}/external/stream?reqId=${requestId}`;
 
@@ -90,91 +76,109 @@ export const searchApi = {
       });
 
       let isConnected = false;
+      console.log('[SSE] 연결 시도:', {
+        requestId,
+        url,
+        timestamp: new Date().toISOString(),
+        readyState: eventSource.readyState, // CONNECTING: 0, OPEN: 1, CLOSED: 2
+      });
+
       const connectionTimeout = setTimeout(() => {
         if (!isConnected) {
-          console.error('[SSE] 연결 타임아웃:', {
+          console.error('[SSE] 연결 타임아웃 - 연결 상태:', {
             requestId,
             url,
             readyState: eventSource.readyState,
+            timestamp: new Date().toISOString(),
+            eventSource: {
+              url: eventSource.url,
+              withCredentials: eventSource.withCredentials,
+              readyState: eventSource.readyState,
+            },
           });
           eventSource.close();
         }
-      }, 10000); // 10초 타임아웃
+      }, 10000);
 
       eventSource.onopen = () => {
         isConnected = true;
         clearTimeout(connectionTimeout);
-        console.log('[SSE] 연결 성공:', {
+        console.log('[SSE] 연결 성공 - 상태:', {
           requestId,
           url,
           readyState: eventSource.readyState,
+          timestamp: new Date().toISOString(),
+          eventSource: {
+            url: eventSource.url,
+            withCredentials: eventSource.withCredentials,
+            readyState: eventSource.readyState,
+          },
         });
       };
 
       eventSource.onmessage = event => {
         try {
-          const data = JSON.parse(event.data);
-          console.log('[SSE] 메시지 수신:', {
-            requestId,
-            type: data.type,
-            message: data.message,
-          });
+          const data: AnalysisMessage = JSON.parse(event.data);
+          const type = event.type as SseType;
 
-          switch (data.type) {
-            case 'connected':
-              console.log('[SSE] 서버 연결 확인:', {
+          console.log('[SSE] Parsed message:', data);
+
+          if (type === SseType.CONNECTED) {
+            console.log('[SSE] 서버 연결 확인:', {
+              requestId,
+              result: data.result,
+              timestamp: new Date().toISOString(),
+            });
+          } else if (type === SseType.MESSAGE) {
+            try {
+              console.log('[SSE] 분석 완료:', data.result);
+              const result = JSON.parse(data.result as unknown as string) as AnalysisResult;
+              onUpdate(result);
+            } catch (parseError) {
+              console.error('[SSE] 분석 결과 파싱 오류:', {
                 requestId,
-                message: data.message,
+                error: parseError,
+                rawPost: data.result,
                 timestamp: new Date().toISOString(),
               });
-              break;
-
-            case 'analysisComplete':
-              if (data.post) {
-                console.log('[SSE] 분석 완료:', {
-                  requestId,
-                  post: data.post,
-                });
-                onUpdate(data.post);
-              }
-              break;
-
-            default:
-              // 분석 결과일 수 있으므로 post 객체가 있는지 확인
-              if (data.post) {
-                console.log('[SSE] 분석 결과 수신:', {
-                  requestId,
-                  post: data.post,
-                });
-                onUpdate(data.post);
-              } else {
-                console.log('[SSE] 기타 메시지:', {
-                  requestId,
-                  data,
-                });
-              }
+            }
           }
         } catch (error) {
           console.error('[SSE] 메시지 파싱 오류:', {
             requestId,
             error,
-            data: event.data,
+            rawData: event.data,
+            timestamp: new Date().toISOString(),
           });
         }
       };
 
       eventSource.onerror = error => {
-        console.error('[SSE] 연결 오류:', {
+        const errorInfo = {
           requestId,
-          error,
           readyState: eventSource.readyState,
           isConnected,
           url,
-        });
+          timestamp: new Date().toISOString(),
+          error:
+            error instanceof Error
+              ? {
+                  name: error.name,
+                  message: error.message,
+                  stack: error.stack,
+                }
+              : error,
+        };
+
+        console.error('[SSE] 연결 오류:', errorInfo);
 
         if (eventSource.readyState === EventSource.CLOSED) {
           isConnected = false;
           clearTimeout(connectionTimeout);
+          console.log('[SSE] 연결 종료됨:', {
+            requestId,
+            timestamp: new Date().toISOString(),
+          });
         }
       };
 
