@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useRef } from 'react';
 import { SearchApiResponse, SearchResult, SearchResultPost } from '@/types/search.type';
 import { useSearch } from '@/hooks/use-search.hook';
 import { LoadingModal } from '@/components/common/feedback';
@@ -34,78 +34,10 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
 }) => {
   const { isLoading, isModalLoading } = useSearch();
   const isFromMainNavigation = useSearchStore(state => state.isFromMainNavigation);
-  const [loadingMessages, setLoadingMessages] = useState<{ [key: number]: string }>({});
-  const [subMessages, setSubMessages] = useState<{ [key: number]: string }>({});
 
   // 섹션 refs
   const sponsoredSectionRef = useRef<HTMLDivElement>(null);
   const nonSponsoredSectionRef = useRef<HTMLDivElement>(null);
-
-  // 각 카드별 로딩 메시지 관리
-  const updateLoadingMessage = (index: number) => {
-    setLoadingMessages(prev => ({
-      ...prev,
-      [index]: '검색 중입니다. 잠시만 기다려주세요.',
-    }));
-    setSubMessages(prev => ({ ...prev, [index]: '' }));
-
-    const timer1 = setTimeout(() => {
-      setLoadingMessages(prev => ({
-        ...prev,
-        [index]: 'AI가 포스트를 분석하고 있습니다.\n잠시만 기다려주세요.',
-      }));
-    }, 2000);
-
-    const timer2 = setTimeout(() => {
-      setLoadingMessages(prev => ({
-        ...prev,
-        [index]: 'AI가 포스트를 분석하고 있습니다.\n조금만 더 기다려주세요.',
-      }));
-    }, 5000);
-
-    const timer3 = setTimeout(() => {
-      setLoadingMessages(prev => ({
-        ...prev,
-        [index]: '혹시 협찬인지\n다시 한 번 꼼꼼히 확인하고 있어요.',
-      }));
-    }, 9000);
-
-    const timer4 = setTimeout(() => {
-      setSubMessages(prev => ({
-        ...prev,
-        [index]: '거의 다 왔어요.\n조금만 더 기다려 주세요.',
-      }));
-    }, 12000);
-
-    return () => {
-      clearTimeout(timer1);
-      clearTimeout(timer2);
-      clearTimeout(timer3);
-      clearTimeout(timer4);
-    };
-  };
-
-  // 로딩 상태가 변경될 때마다 타이머 설정
-  useEffect(() => {
-    let cleanup: (() => void) | undefined;
-
-    if (!isLoading) {
-      setLoadingMessages({});
-      setSubMessages({});
-      return;
-    }
-
-    // 현재 표시된 포스트 수에 따라 새로운 타이머 설정
-    if (results?.posts) {
-      cleanup = updateLoadingMessage(results.posts.length);
-    }
-
-    return () => {
-      if (cleanup) {
-        cleanup();
-      }
-    };
-  }, [isLoading]);
 
   // 결과를 내돈내산, 협찬, 분석중으로 분리
   const pendingPosts = results?.posts.filter(isPendingAnalysis) || [];
@@ -169,19 +101,6 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
                     onRetry={onRetry}
                   />
                 )}
-
-                {/* 로딩 표시 */}
-                <div className="mt-8 text-center">
-                  <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-emerald-500 mx-auto"></div>
-                  <p className="text-gray-500 mt-2 whitespace-pre-line">
-                    {loadingMessages[results.posts.length] || '검색 중입니다...'}
-                  </p>
-                  {subMessages[results.posts.length] && (
-                    <p className="text-gray-400 text-sm mt-1 whitespace-pre-line">
-                      {subMessages[results.posts.length]}
-                    </p>
-                  )}
-                </div>
               </div>
             </div>
             <Sidebar />

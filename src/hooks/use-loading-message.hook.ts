@@ -38,16 +38,32 @@ const DEFAULT_INLINE_CONFIG: LoadingMessageConfig = {
       delay: 2000,
     },
     {
+      message: 'AI가 포스트를 분석하고 있습니다..',
+      delay: 3000,
+    },
+    {
+      message: 'AI가 포스트를 분석하고 있습니다...',
+      delay: 4000,
+    },
+    {
       message: '조금만 더 기다려주세요.',
       delay: 5000,
     },
     {
-      message: '꼼꼼히 확인하고 있으니 조금만 더 기다려주세요.',
+      message: '조금만 더 기다려주세요..',
+      delay: 6000,
+    },
+    {
+      message: '조금만 더 기다려주세요...',
+      delay: 7000,
+    },
+    {
+      message: '혹시 협찬인지 다시 한 번 꼼꼼히 확인하고 있어요.',
       delay: 9000,
     },
     {
       message: '거의 다 왔어요!',
-      delay: 12000,
+      delay: 14000,
     },
   ],
 };
