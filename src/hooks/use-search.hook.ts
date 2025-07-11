@@ -252,21 +252,6 @@ export const useSearch = () => {
 
     // jobId와 post를 매핑하는 Map 생성
     const postJobMap = new Map<string, number>();
-    posts.forEach((post, index) => {
-      if (isPendingAnalysis(post)) {
-        // 분석 중인 포스트의 경우 jobId를 찾음
-        const jobId = post.sponsorIndicators[0]?.source?.text;
-        if (jobId) {
-          postJobMap.set(jobId, index);
-          console.log('[SSE] 포스트 매핑 추가:', {
-            index,
-            jobId,
-            title: post.title,
-            indicators: post.sponsorIndicators,
-          });
-        }
-      }
-    });
 
     const unsubscribe = searchApi.subscribeToAnalysis(requestId, sseToken, analysisResult => {
       console.log('[SSE] 분석 결과 수신:', {
@@ -303,13 +288,6 @@ export const useSearch = () => {
           let foundPostIndex = -1;
           pageData.posts.forEach((post, index) => {
             if (isPendingAnalysis(post)) {
-              console.log('Checking post:', {
-                title: post.title,
-                storedJobId: post.sponsorIndicators[0]?.source?.text,
-                receivedJobId: analysisResult.jobId,
-                isPending: isPendingAnalysis(post),
-              });
-
               if (post.sponsorIndicators[0]?.source?.text === analysisResult.jobId) {
                 foundPostIndex = index;
               }
@@ -441,6 +419,155 @@ export const useSearch = () => {
         limit: ITEMS_PER_PAGE,
       });
 
+      // 검색 결과를 받은 즉시 SSE 구독 시작
+      if (requestId && sseToken) {
+        console.log('[SSE] 검색 결과 수신 후 즉시 구독 시작:', {
+          requestId,
+          page,
+          totalPosts: response.posts.length,
+        });
+        console.log('[SSE] 검색 결과:', response.posts);
+
+        // SSE 구독 시작
+        const unsubscribe = searchApi.subscribeToAnalysis(requestId, sseToken, analysisResult => {
+          // 분석 결과 수신 시 처리
+          console.log('[SSE] 분석 결과 수신:', analysisResult);
+
+          // 상태 업데이트를 배치로 처리
+          const batchUpdate = () => {
+            // 현재 캐시된 데이터에서 분석 대기 중인 포스트가 있는지 확인
+            const currentCache = loadCacheFromStorage();
+            const pageData = currentCache[searchQuery]?.pageData[page];
+
+            if (!pageData) {
+              console.log('[SSE] 페이지 데이터가 없음, 구독 유지');
+              return;
+            }
+
+            const hasPendingPosts = pageData.posts.some(isPendingAnalysis);
+            if (!hasPendingPosts) {
+              console.log('[SSE] 분석 대기 중인 포스트 없음, 구독 해제:', requestId);
+              const unsubscribeFunc = activeSubscriptions.get(requestId);
+              if (unsubscribeFunc) {
+                unsubscribeFunc();
+                activeSubscriptions.delete(requestId);
+              }
+              return;
+            }
+
+            // 분석 결과 처리 로직
+            let foundPostIndex = -1;
+            pageData.posts.forEach((post, index) => {
+              if (
+                isPendingAnalysis(post) &&
+                post.sponsorIndicators[0]?.source?.text === analysisResult.jobId
+              ) {
+                foundPostIndex = index;
+              }
+            });
+
+            if (foundPostIndex === -1) {
+              console.log('[SSE] 매칭되는 포스트를 찾을 수 없음:', {
+                jobId: analysisResult.jobId,
+                posts: pageData.posts.map(post => ({
+                  title: post.title,
+                  jobId: post.sponsorIndicators[0]?.source?.text,
+                  isPending: isPendingAnalysis(post),
+                })),
+              });
+              return;
+            }
+
+            // 캐시 업데이트
+            setCachedResults(prevCache => {
+              const existingCache = prevCache[searchQuery];
+              if (!existingCache?.pageData[page]) return prevCache;
+
+              const updatedPosts = [...pageData.posts];
+              updatedPosts[foundPostIndex] = {
+                ...updatedPosts[foundPostIndex],
+                isSponsored: analysisResult.isSponsored,
+                sponsorProbability: analysisResult.sponsorProbability,
+                sponsorIndicators: [
+                  {
+                    type: analysisResult.sponsorIndicator.type,
+                    pattern: analysisResult.sponsorIndicator.pattern,
+                    matchedText: analysisResult.sponsorIndicator.matchedText,
+                    probability: analysisResult.sponsorIndicator.probability,
+                    source: analysisResult.sponsorIndicator.source,
+                  },
+                ],
+              };
+
+              console.log('[SSE] 포스트 업데이트:', {
+                index: foundPostIndex,
+                title: updatedPosts[foundPostIndex].title,
+                isSponsored: analysisResult.isSponsored,
+              });
+
+              const newCache = {
+                ...prevCache,
+                [searchQuery]: {
+                  ...existingCache,
+                  pageData: {
+                    ...existingCache.pageData,
+                    [page]: { ...pageData, posts: updatedPosts },
+                  },
+                },
+              };
+
+              // 캐시 업데이트 후 분석 대기 중인 포스트가 있는지 확인
+              const updatedPageData = newCache[searchQuery].pageData[page];
+              const stillHasPendingPosts = updatedPageData.posts.some(isPendingAnalysis);
+
+              console.log('[SSE] 분석 상태 확인:', {
+                requestId,
+                hasPendingPosts: stillHasPendingPosts,
+                pendingPosts: updatedPageData.posts.filter(isPendingAnalysis).map(post => ({
+                  title: post.title,
+                  indicators: post.sponsorIndicators,
+                })),
+              });
+
+              if (!stillHasPendingPosts) {
+                console.log('[SSE] 모든 분석 완료, 구독 해제:', requestId);
+                const unsubscribeFunc = activeSubscriptions.get(requestId);
+                if (unsubscribeFunc) {
+                  unsubscribeFunc();
+                  activeSubscriptions.delete(requestId);
+                }
+              }
+
+              saveCacheToStorage(newCache);
+              return newCache;
+            });
+
+            // UI 업데이트
+            if (!results || (results.keyword === searchQuery && results.page === page)) {
+              const latestCache = loadCacheFromStorage();
+              const latestPageData = latestCache[searchQuery]?.pageData[page];
+
+              if (latestPageData) {
+                setResults({
+                  keyword: searchQuery,
+                  posts: latestPageData.posts,
+                  totalResults: latestCache[searchQuery].keywordData.totalResults,
+                  itemsPerPage: latestCache[searchQuery].keywordData.itemsPerPage,
+                  sponsoredResults: latestCache[searchQuery].keywordData.sponsoredResults,
+                  page,
+                });
+              }
+            }
+          };
+
+          requestAnimationFrame(batchUpdate);
+        });
+
+        if (unsubscribe) {
+          activeSubscriptions.set(requestId, unsubscribe);
+        }
+      }
+
       // 결과 즉시 설정
       const pageResults: SearchApiResponse = {
         keyword: searchQuery,
@@ -468,16 +595,6 @@ export const useSearch = () => {
         response.totalResults,
         response.sponsoredResults,
         setCachedResults
-      );
-
-      // 분석 대기 중인 포스트가 있는 경우에만 SSE 구독 시작
-      handlePendingAnalysis(
-        searchQuery,
-        page,
-        response.posts,
-        requestId,
-        sseToken,
-        'fetchPageData'
       );
 
       return { requestId: requestId || null };
