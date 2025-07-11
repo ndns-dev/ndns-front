@@ -2,6 +2,7 @@ import React from 'react';
 import { SearchResultPost } from '@/types/search.type';
 import { ResultCard } from './search-card.component';
 import { AdBanner } from '@/components/common/marketing';
+import { useLoadingMessage } from '@/hooks/use-loading-message.hook';
 
 interface SearchSectionProps {
   title: string;
@@ -26,6 +27,8 @@ export const SearchSection: React.FC<SearchSectionProps> = ({
   getPostStreamStatus,
   onRetry,
 }) => {
+  const { message: loadingMessage } = useLoadingMessage(showLoadingIndicator);
+
   if (posts.length === 0) return null;
 
   return (
@@ -36,7 +39,7 @@ export const SearchSection: React.FC<SearchSectionProps> = ({
         {showLoadingIndicator && (
           <div className="ml-3 flex items-center">
             <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-blue-500"></div>
-            <span className="ml-2 text-sm text-gray-500">분석 중...</span>
+            <span className="ml-2 text-sm text-gray-500">{loadingMessage}</span>
           </div>
         )}
       </div>
