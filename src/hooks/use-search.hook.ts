@@ -173,13 +173,13 @@ export const useSearch = () => {
     });
 
     // 현재 페이지인 경우 UI 업데이트
-    const currentKeywordData = cachedResults[searchQuery]?.keywordData;
+    const currentResultsInStore = useSearchStore.getState().results;
     setResults({
       keyword: searchQuery,
       posts: updatedPosts,
-      totalResults: currentKeywordData?.totalResults || 0,
+      totalResults: currentResultsInStore?.totalResults || 0,
       itemsPerPage: ITEMS_PER_PAGE,
-      sponsoredResults: currentKeywordData?.sponsoredResults || 0,
+      sponsoredResults: currentResultsInStore?.sponsoredResults || 0,
       page,
     });
   };
@@ -552,6 +552,9 @@ export const useSearch = () => {
       setIsModalLoading(false);
       return { requestId: null };
     }
+
+    setResults(null);
+    setError(null);
 
     const trimmedQuery = searchQuery.trim();
     if (trimmedQuery.length < 2) {
