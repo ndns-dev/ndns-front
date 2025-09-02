@@ -101,7 +101,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ className = '' }) => {
           )}
           style={adStyle}
         >
-          <AdBanner position="sidebar" />
+          <AdBanner position="sidebar" adSlot="8444662269" />
         </div>
       </div>
     </div>
