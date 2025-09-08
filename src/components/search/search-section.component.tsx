@@ -1,7 +1,7 @@
 import React from 'react';
 import { SearchResultPost } from '@/types/search.type';
 import { ResultCard } from './search-card.component';
-import { AdBanner } from '@/components/common/marketing';
+// import { AdBanner } from '@/components/common/marketing';
 import { useLoadingMessage } from '@/hooks/use-loading-message.hook';
 
 interface SearchSectionProps {
@@ -22,7 +22,7 @@ export const SearchSection: React.FC<SearchSectionProps> = ({
   titleColor,
   posts,
   sectionRef,
-  showAdBanner = false,
+  // showAdBanner = false,
   showLoadingIndicator = false,
   getPostStreamStatus,
   onRetry,
@@ -45,7 +45,7 @@ export const SearchSection: React.FC<SearchSectionProps> = ({
       </div>
 
       <div className="space-y-4">
-        {posts.map((post, index) => {
+        {posts.map(post => {
           const streamStatus = getPostStreamStatus(post);
           return (
             <React.Fragment key={post.link}>
@@ -55,7 +55,7 @@ export const SearchSection: React.FC<SearchSectionProps> = ({
                 isStreamEnded={streamStatus?.isEnded ?? false}
                 onRetry={streamStatus?.jobId ? () => onRetry(streamStatus.jobId) : undefined}
               />
-              {showAdBanner && index === 2 && <AdBanner />}
+              {/* {showAdBanner && index === 2 && <AdBanner />} */}
             </React.Fragment>
           );
         })}
