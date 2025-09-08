@@ -12,6 +12,7 @@ import { SearchCount } from './search-count.component';
 import { SearchSection } from './search-section.component';
 import { scrollToElement } from '@/utils/scroll.util';
 import { isPendingAnalysis, isSponsored, isNonSponsored } from '@/utils/post.util';
+import { LocationDisplay } from '@/components/common/location';
 
 interface SearchResultsProps {
   results: SearchApiResponse | null;
@@ -63,6 +64,9 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
                 <h2 className="text-xl font-bold text-gray-800 dark:text-white mb-4">
                   &apos;{results.keyword}&apos; 검색 중... (현재 {results.posts.length}개 결과)
                 </h2>
+                <div className="mb-4">
+                  <LocationDisplay />
+                </div>
                 <SearchCount
                   posts={results.posts}
                   onSponsoredClick={() => scrollToElement(sponsoredSectionRef.current)}
@@ -151,6 +155,9 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
                   &apos;{results.keyword}&apos; 검색 결과 (총{' '}
                   {results.totalResults.toLocaleString()}개)
                 </h2>
+                <div className="mb-4">
+                  <LocationDisplay />
+                </div>
 
                 <SearchCount
                   posts={results.posts}

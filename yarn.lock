@@ -1996,6 +1996,11 @@ keyv@^4.5.4:
   dependencies:
     json-buffer "3.0.1"
 
+korea-sigungu-geocoding@^1.2.1:
+  version "1.2.1"
+  resolved "https://registry.yarnpkg.com/korea-sigungu-geocoding/-/korea-sigungu-geocoding-1.2.1.tgz#6e9c6e0edb30abee72d1c40061b614441d906ec6"
+  integrity sha512-vbdZIbDuBpowYyY9VnoYkB+hizFipWagmoYcCCxgEpN0d4KC99jJIbIxeodHftmU96jjNRMbEbkYnUFfBnIISQ==
+
 language-subtag-registry@^0.3.20:
   version "0.3.23"
   resolved "https://registry.npmjs.org/language-subtag-registry/-/language-subtag-registry-0.3.23.tgz"

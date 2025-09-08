@@ -4,8 +4,10 @@ import { useEffect, useRef, useState } from 'react';
 import { Header, Footer } from '@/components/common/navigation';
 import { SearchBar } from '@/components/search/search-bar.component';
 import { RandomSearchChips } from '@/components/common/chip';
+// import { AdBanner } from '@/components/common/marketing';
 import { Button } from '@/components/ui';
 import { RefreshCw } from 'lucide-react';
+import { LocationDisplay, LocationFetcher } from '@/components/common/location';
 
 export default function Home() {
   const searchContainerRef = useRef<HTMLDivElement>(null);
@@ -35,6 +37,9 @@ export default function Home() {
     <div className="flex flex-col min-h-screen">
       <Header />
 
+      {/* 백그라운드에서 위치 정보 수집 */}
+      <LocationFetcher autoFetch={true} />
+
       <main className="flex-grow flex flex-col items-center px-4 py-8">
         <div className="w-full max-w-4xl mx-auto flex flex-col items-center justify-center flex-grow">
           <div className="text-center mb-12">
@@ -48,6 +53,11 @@ export default function Home() {
 
           <div ref={searchContainerRef} className="w-full max-w-2xl">
             <SearchBar centered />
+          </div>
+
+          {/* 위치 표시 컴포넌트 */}
+          <div className="mt-4 flex justify-center">
+            <LocationDisplay />
           </div>
 
           <div className="mt-8 text-center">
@@ -76,6 +86,10 @@ export default function Home() {
             </div>
           </div>
         </div>
+        {/* 수평형 디스플레이 광고 - 임시 주석처리 */}
+        {/* <div className="w-full max-w-2xl mb-8">
+          <AdBanner position="inline" adSlot="7198195058" />
+        </div> */}
       </main>
 
       <Footer />
