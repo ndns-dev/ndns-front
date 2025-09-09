@@ -1,5 +1,5 @@
 import React from 'react';
-import { SearchResultPost } from '@/types/search.type';
+import { SearchResultPost, PostWithDistance } from '@/types/search.type';
 import { ResultCard } from './search-card.component';
 // import { AdBanner } from '@/components/common/marketing';
 import { useLoadingMessage } from '@/hooks/use-loading-message.hook';
@@ -7,7 +7,7 @@ import { useLoadingMessage } from '@/hooks/use-loading-message.hook';
 interface SearchSectionProps {
   title: string;
   titleColor: string;
-  posts: SearchResultPost[];
+  posts: PostWithDistance[];
   sectionRef?: React.RefObject<HTMLDivElement | null>;
   showAdBanner?: boolean;
   showLoadingIndicator?: boolean;

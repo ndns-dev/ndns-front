@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import { SearchApiResponse, SearchResult, SearchResultPost } from '@/types/search.type';
 import { useSearch } from '@/hooks/use-search.hook';
 import { LoadingModal } from '@/components/common/feedback';
@@ -13,6 +13,9 @@ import { SearchSection } from './search-section.component';
 import { scrollToElement } from '@/utils/scroll.util';
 import { isPendingAnalysis, isSponsored, isNonSponsored } from '@/utils/post.util';
 import { LocationDisplay } from '@/components/common/location';
+import { SortDropdown, SortOption } from './sort-dropdown.component';
+import { sortPostsByDistance, hasLocationData } from '@/utils/distance.util';
+import { useLocationStore } from '@/store/location.store';
 
 interface SearchResultsProps {
   results: SearchApiResponse | null;
@@ -35,15 +38,27 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
 }) => {
   const { isLoading, isModalLoading } = useSearch();
   const isFromMainNavigation = useSearchStore(state => state.isFromMainNavigation);
+  const { location: userLocation } = useLocationStore();
+  const [sortOption, setSortOption] = useState<SortOption>('default');
 
   // 섹션 refs
   const sponsoredSectionRef = useRef<HTMLDivElement>(null);
   const nonSponsoredSectionRef = useRef<HTMLDivElement>(null);
 
+  // 정렬된 포스트들
+  const sortedPosts = results
+    ? sortOption === 'distance'
+      ? sortPostsByDistance(results.posts, userLocation)
+      : results.posts
+    : [];
+
   // 결과를 내돈내산, 협찬, 분석중으로 분리
-  const pendingPosts = results?.posts.filter(isPendingAnalysis) || [];
-  const nonSponsoredPosts = results?.posts.filter(isNonSponsored) || [];
-  const sponsoredPosts = results?.posts.filter(isSponsored) || [];
+  const pendingPosts = sortedPosts.filter(isPendingAnalysis);
+  const nonSponsoredPosts = sortedPosts.filter(isNonSponsored);
+  const sponsoredPosts = sortedPosts.filter(isSponsored);
+
+  // 위치 데이터가 있는지 확인
+  const hasLocation = results ? hasLocationData(results.posts) : false;
 
   return (
     <>
@@ -65,13 +80,22 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
                   &apos;{results.keyword}&apos; 검색 중... (현재 {results.posts.length}개 결과)
                 </h2>
                 <div className="mb-4">
-                  <LocationDisplay />
+                  <LocationDisplay showRefreshButton={true} />
                 </div>
-                <SearchCount
-                  posts={results.posts}
-                  onSponsoredClick={() => scrollToElement(sponsoredSectionRef.current)}
-                  onNonSponsoredClick={() => scrollToElement(nonSponsoredSectionRef.current)}
-                />
+                <div className="flex items-center justify-between mb-4">
+                  <SearchCount
+                    posts={results.posts}
+                    onSponsoredClick={() => scrollToElement(sponsoredSectionRef.current)}
+                    onNonSponsoredClick={() => scrollToElement(nonSponsoredSectionRef.current)}
+                  />
+                  {hasLocation && (
+                    <SortDropdown
+                      value={sortOption}
+                      onChange={setSortOption}
+                      hasLocationData={hasLocation}
+                    />
+                  )}
+                </div>
               </div>
 
               <div className="space-y-4">
@@ -156,14 +180,22 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
                   {results.totalResults.toLocaleString()}개)
                 </h2>
                 <div className="mb-4">
-                  <LocationDisplay />
+                  <LocationDisplay showRefreshButton={true} />
                 </div>
-
-                <SearchCount
-                  posts={results.posts}
-                  onSponsoredClick={() => scrollToElement(sponsoredSectionRef.current)}
-                  onNonSponsoredClick={() => scrollToElement(nonSponsoredSectionRef.current)}
-                />
+                <div className="flex items-center justify-between mb-4">
+                  <SearchCount
+                    posts={results.posts}
+                    onSponsoredClick={() => scrollToElement(sponsoredSectionRef.current)}
+                    onNonSponsoredClick={() => scrollToElement(nonSponsoredSectionRef.current)}
+                  />
+                  {hasLocation && (
+                    <SortDropdown
+                      value={sortOption}
+                      onChange={setSortOption}
+                      hasLocationData={hasLocation}
+                    />
+                  )}
+                </div>
               </div>
 
               <div className="space-y-4">

@@ -1,4 +1,5 @@
-import { SearchResultPost } from '@/types/search.type';
+import { PostWithDistance } from '@/types/search.type';
+import { MapPin } from 'lucide-react';
 import { env } from '@/config/env.schema';
 import { formatDate } from '@/utils/format.util';
 import { navigateToExternalUrl } from '@/utils/component.util';
@@ -7,7 +8,7 @@ import { isPendingAnalysis, isSponsored } from '@/utils/post.util';
 import { RetryOverlay } from './retry-overlay.component';
 
 interface ResultCardProps {
-  post: SearchResultPost;
+  post: PostWithDistance;
   isStreamActive: boolean;
   isStreamEnded: boolean;
   onRetry?: () => void;
@@ -43,6 +44,12 @@ export const ResultCard: React.FC<ResultCardProps> = ({
 
         <div className="text-sm text-gray-600 dark:text-gray-400 mb-2">
           {post.bloggerName} • {formatDate(post.postDate)}
+          {post.distance !== undefined && (
+            <span className="ml-2 inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
+              <MapPin className="h-3 w-3" />
+              {post.distance}km
+            </span>
+          )}
         </div>
 
         <div

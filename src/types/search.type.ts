@@ -11,6 +11,13 @@ export interface SponsorIndicator {
   probability: number;
 }
 
+export interface LocationInfo {
+  latitude: string;
+  longitude: string;
+  name: string;
+  address: string;
+}
+
 export interface SearchResultPost {
   title: string;
   link: string;
@@ -21,6 +28,11 @@ export interface SearchResultPost {
   isSponsored: boolean;
   sponsorProbability: number;
   sponsorIndicators: SponsorIndicator[];
+  location?: LocationInfo;
+}
+
+export interface PostWithDistance extends SearchResultPost {
+  distance?: number;
 }
 
 export interface SearchApiResponse {

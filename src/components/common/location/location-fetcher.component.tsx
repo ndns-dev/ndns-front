@@ -7,11 +7,15 @@ import { useLocationStore, LocationData } from '@/store/location.store';
 interface LocationFetcherProps {
   onLocationUpdate?: (location: LocationData | null) => void;
   autoFetch?: boolean;
+  onRefreshComplete?: () => void;
+  forceRefresh?: boolean;
 }
 
 export const LocationFetcher: React.FC<LocationFetcherProps> = ({
   onLocationUpdate,
   autoFetch = true,
+  onRefreshComplete,
+  forceRefresh = false,
 }) => {
   const { location, setLocation } = useLocationStore();
   const [loading, setLoading] = useState(false);
@@ -55,18 +59,19 @@ export const LocationFetcher: React.FC<LocationFetcherProps> = ({
         // 주소 조회 (동기적으로 즉시 처리)
         try {
           const address = reverseGeocode(latitude, longitude);
-          console.log('지역 조회 성공:', address);
 
           const finalLocationData = { ...locationData, address };
           setLocation(finalLocationData);
           setLoading(false);
           onLocationUpdate?.(finalLocationData);
+          onRefreshComplete?.();
         } catch (error) {
           console.error('지역 조회 실패:', error);
           const finalLocationData = { ...locationData, address: '지역 조회 실패' };
           setLocation(finalLocationData);
           setLoading(false);
           onLocationUpdate?.(finalLocationData);
+          onRefreshComplete?.();
         }
       },
       error => {
@@ -90,6 +95,7 @@ export const LocationFetcher: React.FC<LocationFetcherProps> = ({
         setLoading(false);
         setLocation(null);
         onLocationUpdate?.(null);
+        onRefreshComplete?.();
 
         console.error('위치 오류:', error);
       },
@@ -103,10 +109,14 @@ export const LocationFetcher: React.FC<LocationFetcherProps> = ({
 
   // 자동으로 위치 정보 가져오기
   useEffect(() => {
-    if (autoFetch && !location && !loading && !error) {
+    if (forceRefresh) {
+      // 강제 새로고침인 경우 즉시 실행
+      getCurrentLocation();
+    } else if (autoFetch && !location && !loading && !error) {
+      // 일반적인 자동 가져오기
       getCurrentLocation();
     }
-  }, [autoFetch, location, loading, error, getCurrentLocation]);
+  }, [autoFetch, location, loading, error, getCurrentLocation, forceRefresh]);
 
   // 이 컴포넌트는 UI를 렌더링하지 않음 (백그라운드에서 위치 수집만)
   return null;
