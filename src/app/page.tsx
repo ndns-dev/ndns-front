@@ -57,7 +57,7 @@ export default function Home() {
 
           {/* 위치 표시 컴포넌트 */}
           <div className="mt-4 flex justify-center">
-            <LocationDisplay />
+            <LocationDisplay showRefreshButton={true} />
           </div>
 
           <div className="mt-8 text-center">
