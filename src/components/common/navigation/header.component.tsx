@@ -3,7 +3,6 @@
 import React from 'react';
 import Link from 'next/link';
 import { useSearchStore } from '@/store/search.store';
-import { MenuButton } from './menu-button.component';
 
 export const Header: React.FC = () => {
   const { resetSearch } = useSearchStore();
@@ -27,9 +26,6 @@ export const Header: React.FC = () => {
           >
             내돈내산
           </Link>
-          <nav className="flex items-center space-x-4">
-            <MenuButton />
-          </nav>
         </div>
       </div>
     </header>

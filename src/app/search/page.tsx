@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { Header, Footer } from '@/components/common/navigation';
 import { SearchBar } from '@/components/search/search-bar.component';
 import { SearchResults } from '@/components/search/search-result.component';
+// import { AdBanner } from '@/components/common/marketing';
 import { useSearch } from '@/hooks/use-search.hook';
 import { SearchResultPost } from '@/types/search.type';
 import { isPendingAnalysis } from '@/utils/post.util';
@@ -170,14 +171,37 @@ export default function SearchPage() {
           className="w-full max-w-4xl mx-auto transition-all duration-500"
           id="search-results-container"
         >
-          <SearchResults
-            results={results}
-            error={error}
-            onPageChange={handlePageChange}
-            currentPage={currentPage}
-            getPostStreamStatus={getPostStreamStatus}
-            onRetry={handleRetry}
-          />
+          {/* 검색 결과가 있을 때만 광고 표시 */}
+          {results && results.posts && results.posts.length > 0 && (
+            <>
+              {/* 상단 수평형 광고 */}
+              <div className="mb-8">{/* <AdBanner position="inline" adSlot="7198195058" /> */}</div>
+
+              <SearchResults
+                results={results}
+                error={error}
+                onPageChange={handlePageChange}
+                currentPage={currentPage}
+                getPostStreamStatus={getPostStreamStatus}
+                onRetry={handleRetry}
+              />
+
+              {/* 하단 수평형 광고 */}
+              <div className="mt-8">{/* <AdBanner position="inline" adSlot="7198195058" /> */}</div>
+            </>
+          )}
+
+          {/* 검색 결과가 없을 때는 광고 없이 결과만 표시 */}
+          {(!results || !results.posts || results.posts.length === 0) && (
+            <SearchResults
+              results={results}
+              error={error}
+              onPageChange={handlePageChange}
+              currentPage={currentPage}
+              getPostStreamStatus={getPostStreamStatus}
+              onRetry={handleRetry}
+            />
+          )}
         </div>
       </main>
 

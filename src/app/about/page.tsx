@@ -1,41 +1,22 @@
 'use client';
 
-import { useState } from 'react';
-import { Header, Footer } from '@/components/common/navigation';
-import { ComparisonSection } from '@/components/about/comparison-section.component';
-import { SearchChipsSection } from '@/components/about/search-chips-section.component';
-import { COMPARISON_TYPES } from '@/types/about.type';
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 
 export default function AboutPage() {
-  const [refreshChips, setRefreshChips] = useState(false);
+  const router = useRouter();
 
-  // 새로고침 트리거 함수
-  const triggerRefresh = () => {
-    setRefreshChips(prev => !prev);
-  };
+  useEffect(() => {
+    // 홈페이지의 기능소개 섹션으로 리다이렉트
+    router.replace('/?section=about');
+  }, [router]);
 
   return (
-    <div className="flex flex-col min-h-screen">
-      <Header />
-
-      <main className="flex-grow flex flex-col items-center px-4 py-12 bg-white dark:bg-gray-900">
-        <div className="w-full max-w-6xl mx-auto">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-            {/* 기존 검색 방식 섹션 */}
-            <ComparisonSection type={COMPARISON_TYPES.TRADITIONAL} />
-
-            {/* 내돈내산 검색 섹션 */}
-            <ComparisonSection type={COMPARISON_TYPES.NDNS} />
-          </div>
-
-          {/* 검색 칩 섹션 - 칼럼 2개 차지 */}
-          <div className="grid grid-cols-1 gap-6">
-            <SearchChipsSection refreshChips={refreshChips} onRefresh={triggerRefresh} />
-          </div>
-        </div>
-      </main>
-
-      <Footer />
+    <div className="flex items-center justify-center min-h-screen">
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-600 mx-auto mb-4"></div>
+        <p className="text-gray-600 dark:text-gray-400">기능 소개 페이지로 이동 중...</p>
+      </div>
     </div>
   );
 }
