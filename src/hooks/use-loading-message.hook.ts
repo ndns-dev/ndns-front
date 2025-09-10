@@ -46,24 +46,28 @@ const DEFAULT_INLINE_CONFIG: LoadingMessageConfig = {
       delay: 4000,
     },
     {
-      message: '조금만 더 기다려주세요.',
+      message: '내돈내산인지 검증하는데 다소 오래 걸릴 수 있어요.',
       delay: 5000,
     },
     {
-      message: '조금만 더 기다려주세요..',
-      delay: 6000,
-    },
-    {
-      message: '조금만 더 기다려주세요...',
+      message: '조금만 더 기다려주세요.',
       delay: 7000,
     },
     {
-      message: '혹시 협찬인지 다시 한 번 꼼꼼히 확인하고 있어요.',
+      message: '조금만 더 기다려주세요..',
+      delay: 8000,
+    },
+    {
+      message: '조금만 더 기다려주세요...',
       delay: 9000,
     },
     {
+      message: '혹시 협찬인지 다시 한 번 꼼꼼히 확인하고 있어요.',
+      delay: 11000,
+    },
+    {
       message: '거의 다 왔어요!',
-      delay: 14000,
+      delay: 15000,
     },
   ],
 };
