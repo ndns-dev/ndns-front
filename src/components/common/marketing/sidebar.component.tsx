@@ -4,7 +4,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { usePathname } from 'next/navigation';
 import { StickySearchBar } from '@/components/search/sticky-search-bar.component';
 import { cn } from '@/utils/class-name.util';
-import { AdBanner } from '@/components/common/marketing/ad-banner.component';
+// import { AdBanner } from '@/components/common/marketing/ad-banner.component';
 import { useSearchUIStore } from '@/store/search-ui.store';
 import { useThemeStore } from '@/store/theme.store';
 interface SidebarProps {
@@ -101,7 +101,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ className = '' }) => {
           )}
           style={adStyle}
         >
-          <AdBanner position="sidebar" adSlot="8444662269" />
+          {/* <AdBanner position="sidebar" adSlot="8444662269" /> */}
         </div>
       </div>
     </div>

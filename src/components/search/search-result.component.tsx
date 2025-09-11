@@ -5,6 +5,7 @@ import { SearchApiResponse, SearchResult, SearchResultPost } from '@/types/searc
 import { useSearch } from '@/hooks/use-search.hook';
 import { LoadingModal } from '@/components/common/feedback';
 import { Sidebar } from '@/components/common/marketing';
+// import { AdBanner } from '@/components/common/marketing';
 import { Pagination } from '@/components/common/navigation';
 import { AlertCircle } from 'lucide-react';
 import { useSearchStore } from '@/store/search.store';
@@ -131,7 +132,10 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
                 )}
               </div>
             </div>
-            <Sidebar />
+            <div className="lg:w-80 space-y-4">
+              <Sidebar />
+              {/* <AdBanner position="sidebar" adSlot="7198195059" /> */}
+            </div>
           </div>
         </div>
       ) : isLoading ? (
@@ -153,7 +157,10 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
                   />
                 </div>
               </div>
-              <Sidebar />
+              <div className="lg:w-80 space-y-4">
+                <Sidebar />
+                {/* <AdBanner position="sidebar" adSlot="7198195059" /> */}
+              </div>
             </div>
           </div>
         ) : (
@@ -242,7 +249,10 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
                 )}
               </div>
             </div>
-            <Sidebar />
+            <div className="lg:w-80 space-y-4">
+              <Sidebar />
+              {/* <AdBanner position="sidebar" adSlot="7198195059" /> */}
+            </div>
           </div>
         </div>
       )}
